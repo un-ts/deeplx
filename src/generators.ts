@@ -1,8 +1,14 @@
 import { generateId, generateTimestamp } from './hacks.js'
-import { SUPPORTED_FORMALITY_TONES } from './settings.js'
+import {
+  AUTO,
+  SourceLanguage,
+  SUPPORTED_FORMALITY_TONES,
+  TargetLanguage,
+} from './settings.js'
 
 export function generateSplitSentencesRequestData(
   text: string,
+  sourceLanguage: SourceLanguage = AUTO,
   identifier = generateId(),
 ) {
   return {
@@ -10,7 +16,7 @@ export function generateSplitSentencesRequestData(
     method: 'LMT_split_into_sentences',
     params: {
       lang: {
-        lang_user_selected: 'auto',
+        lang_user_selected: sourceLanguage,
         user_preferred_langs: [],
       },
       texts: [text],
@@ -53,8 +59,8 @@ function generateCommonJobParams(formality?: 'formal' | 'informal') {
 }
 
 export function generateTranslationRequestData(
-  sourceLanguage: string,
-  targetLanguage: string,
+  sourceLanguage: SourceLanguage,
+  targetLanguage: TargetLanguage,
   sentences: string[],
   identifier = generateId(),
   alternatives = 1,

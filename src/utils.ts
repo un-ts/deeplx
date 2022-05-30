@@ -1,4 +1,4 @@
-import { SUPPORTED_LANGUAGES } from './settings.js'
+import { SUPPORTED_LANGUAGES, TargetLanguage } from './settings.js'
 
 export function createAbbreviationsDictionary(languages = SUPPORTED_LANGUAGES) {
   return languages.reduce<Record<string, string>>((acc, lang) => {
@@ -9,5 +9,7 @@ export function createAbbreviationsDictionary(languages = SUPPORTED_LANGUAGES) {
 }
 
 export function abbreviateLanguage(language: string) {
-  return createAbbreviationsDictionary()[language.toLowerCase()]
+  return createAbbreviationsDictionary()[language.toLowerCase()] as
+    | TargetLanguage
+    | undefined
 }

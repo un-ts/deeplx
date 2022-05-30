@@ -7,6 +7,7 @@ import { URL } from 'node:url'
 import { program } from 'commander'
 
 import { translate } from './api.js'
+import { SourceLanguage, TargetLanguage } from './settings.js'
 
 const __dirname = new URL('.', import.meta.url).pathname
 
@@ -30,8 +31,8 @@ const main = async () => {
     .option('-f, --file <path>', 'File to be translated')
     .parse(process.argv)
     .opts<{
-      sourceLanguage: string
-      targetLanguage: string
+      targetLanguage: TargetLanguage
+      sourceLanguage?: SourceLanguage
       text?: string
       file?: string
       formal?: boolean
@@ -42,9 +43,9 @@ const main = async () => {
   }
 
   const translated = await translate(
-    sourceLanguage,
-    targetLanguage,
     text == null ? await fs.readFile(file!, 'utf8') : text,
+    targetLanguage,
+    sourceLanguage,
     undefined,
     undefined,
     formal == null ? formal : formal ? 'formal' : 'informal',

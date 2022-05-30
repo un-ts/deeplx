@@ -1,5 +1,7 @@
 .*cache
 .type-coverage
+.vercel
 coverage
 lib
 node_modules
+/public/index.html

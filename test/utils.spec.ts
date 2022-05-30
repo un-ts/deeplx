@@ -1,5 +1,3 @@
-import { expect, test } from 'vitest'
-
 import { abbreviateLanguage } from 'deepl-translate'
 
 test('abbreviateLanguage', () => {

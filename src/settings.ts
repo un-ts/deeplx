@@ -1,5 +1,7 @@
 export const API_URL = 'https://www2.deepl.com/jsonrpc'
 
+export const AUTO = 'auto'
+
 export const SUPPORTED_LANGUAGES = [
   { code: 'BG', language: 'Bulgarian' },
   { code: 'ZH', language: 'Chinese' },
@@ -25,6 +27,17 @@ export const SUPPORTED_LANGUAGES = [
   { code: 'SL', language: 'Slovenian' },
   { code: 'ES', language: 'Spanish' },
   { code: 'SV', language: 'Swedish' },
-]
+] as const
+
+export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number]
+
+export type Language = SupportedLanguage['code'] | SupportedLanguage['language']
+
+export type TargetLanguage =
+  | Language
+  | Lowercase<Language>
+  | Uppercase<Language>
+
+export type SourceLanguage = TargetLanguage | 'auto'
 
 export const SUPPORTED_FORMALITY_TONES = ['formal', 'informal']

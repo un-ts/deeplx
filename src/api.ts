@@ -10,7 +10,7 @@ import {
   generateTranslationRequestData,
   generateSplitSentencesRequestData,
 } from './generators.js'
-import { API_URL } from './settings.js'
+import { API_URL, AUTO, SourceLanguage, TargetLanguage } from './settings.js'
 import { abbreviateLanguage } from './utils.js'
 
 const got = _got.extend({
@@ -39,29 +39,46 @@ const got = _got.extend({
   },
 })
 
-export async function splitIntoSentences(text: string, identifier?: number) {
-  const data = generateSplitSentencesRequestData(text, identifier)
+export async function splitSentences(
+  text: string,
+  sourceLanguage?: SourceLanguage,
+  identifier?: number,
+) {
+  const data = generateSplitSentencesRequestData(
+    text,
+    sourceLanguage,
+    identifier,
+  )
+  return await got
+    .post(API_URL, {
+      json: data,
+    })
+    .json<SplittedSentences>()
+}
+
+export async function splitIntoSentences(
+  text: string,
+  sourceLanguage?: SourceLanguage,
+  identifier?: number,
+) {
   return extractSplitSentences(
-    await got
-      .post(API_URL, {
-        json: data,
-      })
-      .json<SplittedSentences>(),
+    await splitSentences(text, sourceLanguage, identifier),
   )
 }
 
 export async function requestTranslation(
-  sourceLanguage: string,
-  targetLanguage: string,
   text: string,
+  targetLanguage: TargetLanguage,
+  sourceLanguage: SourceLanguage,
   identifier?: number,
   alternatives?: number,
   formalityTone?: 'formal' | 'informal',
 ) {
+  const res = await splitSentences(text, sourceLanguage, identifier)
   const data = generateTranslationRequestData(
-    sourceLanguage,
+    sourceLanguage === 'auto' ? res.result.lang : sourceLanguage,
     targetLanguage,
-    await splitIntoSentences(text, identifier),
+    extractSplitSentences(res),
     identifier,
     alternatives,
     formalityTone,
@@ -74,18 +91,18 @@ export async function requestTranslation(
 }
 
 export async function translate(
-  sourceLanguage: string,
-  targetLanguage: string,
   text: string,
+  targetLanguage: TargetLanguage,
+  sourceLanguage: SourceLanguage = AUTO,
   identifier?: number,
   alternatives?: number,
   formalityTone?: 'formal' | 'informal',
 ) {
   return extractTranslatedSentences(
     await requestTranslation(
-      abbreviateLanguage(sourceLanguage),
-      abbreviateLanguage(targetLanguage),
       text,
+      abbreviateLanguage(targetLanguage)!,
+      abbreviateLanguage(sourceLanguage) ?? 'auto',
       identifier,
       alternatives,
       formalityTone,

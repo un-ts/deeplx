@@ -95,7 +95,7 @@ Options:
 This will translate a Spanish (`ES`) text into Russian (`RU`):
 
 ```sh
-deepl -sl spanish -tl russian -t "¡Buenos días!"
+deepl -tl russian -t "¡Buenos días!"
 ```
 
 ```plain
@@ -107,7 +107,7 @@ deepl -sl spanish -tl russian -t "¡Buenos días!"
 This will translate the file (`test.txt`) text from Italian (`IT`) into Portuguese (`PT`):
 
 ```sh
-deepl -sl IT -tl PT -f test.txt
+deepl -tl PT -f test.txt
 ```
 
 #### Example 3
@@ -115,7 +115,7 @@ deepl -sl IT -tl PT -f test.txt
 This will translate a Spanish (`ES`) text into Russian (`RU`) in _formal_ tone:
 
 ```sh
-deepl -sl ES -tl RU --text "¿Cómo te llamas?" --formal
+deepl -tl RU --text "¿Cómo te llamas?" --formal
 ```
 
 ```plain
@@ -129,7 +129,7 @@ Note: _informal_ would be "_Как **тебя** зовут?_"
 This will translate a Japanese (`JP`) text into German (`DE`) in _informal_ tone:
 
 ```sh
-deepl -sl JP -tl DE --text "お元気ですか？" --formal false
+deepl -tl DE --text "お元気ですか？" --formal false
 ```
 
 ```plain
@@ -147,7 +147,7 @@ This will translate a Chinese (`ZH`) text into Dutch (`NL`):
 ```js
 import { translate } from 'deepl-translate'
 
-translate('ZH', 'NL', '你好')
+translate('你好', 'NL', 'ZH')
 ```
 
 ```log
@@ -161,7 +161,7 @@ This will translate a `danish` text into `german` in informal tone:
 ```js
 import { translate } from 'deepl-translate'
 
-translate('danish', 'german', 'Ring til mig!', undefined, undefined, false)
+translate('Ring til mig!', 'german', 'danish', undefined, undefined, false)
 ```
 
 ```log

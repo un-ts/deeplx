@@ -1,5 +1,3 @@
-import { expect, test } from 'vitest'
-
 import { generateJobs } from 'deepl-translate'
 
 test('generate jobs with one sentence', () => {

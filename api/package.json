@@ -1,0 +1,7 @@
+{
+  "name": "deepl-api",
+  "type": "commonjs",
+  "dependencies": {
+    "got": "^11.8.5"
+  }
+}

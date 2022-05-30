@@ -1,3 +1,5 @@
+import { SourceLanguage } from './settings.js'
+
 export interface TranslatedSentences {
   result: {
     translations: Array<{
@@ -21,6 +23,7 @@ export function extractTranslatedSentences(response: TranslatedSentences) {
 export interface SplittedSentences {
   result: {
     splitted_texts: string[][]
+    lang: SourceLanguage
   }
 }
 

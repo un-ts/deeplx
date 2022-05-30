@@ -1,6 +1,10 @@
-import { expect, test } from 'vitest'
+import { jest } from '@jest/globals'
 
-import { splitIntoSentences } from '../src/api.js'
+import { splitIntoSentences } from 'deepl-translate'
+
+if (process.env.CI === 'true') {
+  jest.setTimeout(20 * 1000)
+}
 
 test('splitIntoSentences', async () => {
   const text =

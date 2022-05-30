@@ -1,6 +1,10 @@
-import { beforeEach, expect, test } from 'vitest'
+import { jest } from '@jest/globals'
 
 import { randRange, translate } from 'deepl-translate'
+
+if (process.env.CI === 'true') {
+  jest.setTimeout(20 * 1000)
+}
 
 const sleep = (timeout?: number) =>
   new Promise<void>(resolve => setTimeout(resolve, timeout))
@@ -12,7 +16,7 @@ test('translate russian', async () => {
   const target_language = 'EN'
   const text = 'Я сошла с ума'
   const expected_translation = "I'm out of my mind."
-  const translation = await translate(source_language, target_language, text)
+  const translation = await translate(text, target_language, source_language)
   expect(translation).toEqual(expected_translation)
 })
 
@@ -21,8 +25,8 @@ test('translate chinese', async () => {
   const target_language = 'dutch'
   const text = '你好'
   const expected_translation = 'Hallo'
-  const translation = await translate(source_language, target_language, text)
-  expect(translation).includes(expected_translation)
+  const translation = await translate(text, target_language, source_language)
+  expect(translation).toContain(expected_translation)
 })
 
 test('translate greek romanian', async () => {
@@ -30,25 +34,30 @@ test('translate greek romanian', async () => {
   const target_language = 'ro'
   const text = 'Γεια σας'
   const expected_translation = 'bună ziua'
-  const translation = await translate(source_language, target_language, text)
-  expect(translation.toLowerCase()).includes(expected_translation)
+  const translation = await translate(
+    text,
+    target_language,
+    // @ts-expect-error
+    source_language,
+  )
+  expect(translation.toLowerCase()).toContain(expected_translation)
 })
 
 test('translate sentence', async () => {
   const text = 'Up and down.'
   const expected_translation = 'Op en neer.'
-  expect(await translate('EN', 'NL', text)).toBe(expected_translation)
+  expect(await translate(text, 'NL', 'EN')).toBe(expected_translation)
 })
 
 test('translate sentences', async () => {
   const text =
     "His palms are sweaty, knees weak, arms are heavy. There's vomit on his sweater already, mom's spaghetti."
 
-  const translation = await translate('EN', 'DE', text)
+  const translation = await translate(text, 'DE', 'EN')
 
-  expect(translation).includes('Handfläche')
-  expect(translation).includes('Pullover')
-  expect(translation).includes('Spaghetti')
+  expect(translation).toContain('Handfläche')
+  expect(translation).toContain('Pullover')
+  expect(translation).toContain('Spaghetti')
 })
 
 const PARAGRAPHS = [
@@ -61,7 +70,7 @@ const PARAGRAPHS = [
 
 test('translate generated paragraph', async () => {
   const text = PARAGRAPHS[randRange(0, PARAGRAPHS.length - 1)]
-  const translation = await translate('EN', 'DE', text)
+  const translation = await translate(text, 'DE', 'EN')
   expect(translation.length).toBeGreaterThan(1)
 })
 
@@ -69,39 +78,41 @@ test('formal german translation', async () => {
   const text = "What's your name?"
   const expected_translations = ['Wie ist Ihr Name?', 'Wie heißen Sie?']
   const translation = await translate(
-    'EN',
-    'DE',
     text,
+    'DE',
+    'EN',
     undefined,
     undefined,
     'formal',
   )
-  expect(expected_translations).includes(translation)
+  expect(expected_translations).toContain(translation)
 })
 
 test('informal german translation', async () => {
   const text = "What's your name?"
   const expected_translations = ['Wie ist dein Name?', 'Wie heißt du?']
   const translation = await translate(
-    'EN',
-    'DE',
     text,
+    'DE',
+    'EN',
     undefined,
     undefined,
     'informal',
   )
-  expect(expected_translations).includes(translation)
+  expect(expected_translations).toContain(translation)
 })
 
 test('invalid_formal_tone', () =>
-  expect(
+  expect(() =>
     translate(
-      'EN',
-      'DE',
       'ABC',
+      'DE',
+      'EN',
       undefined,
       undefined,
       // @ts-expect-error
       'politically incorrect',
     ),
-  ).rejects.toThrowErrorMatchingInlineSnapshot('"expected is not a function"'))
+  ).rejects.toThrowErrorMatchingInlineSnapshot(
+    `"Formality tone '{formality_tone}' not supported."`,
+  ))

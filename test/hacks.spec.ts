@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest'
+/* eslint-disable @typescript-eslint/no-magic-numbers */
 
 import { calculateValidTimestamp, generateId } from 'deepl-translate'
 
