@@ -1,9 +1,9 @@
 import { generateId, generateTimestamp } from './hacks.js'
 import {
   AUTO,
-  SourceLanguage,
+  type SourceLanguage,
   SUPPORTED_FORMALITY_TONES,
-  TargetLanguage,
+  type TargetLanguage,
 } from './settings.js'
 
 export function generateSplitSentencesRequestData(

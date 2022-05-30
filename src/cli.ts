@@ -7,7 +7,7 @@ import { URL } from 'node:url'
 import { program } from 'commander'
 
 import { translate } from './api.js'
-import { SourceLanguage, TargetLanguage } from './settings.js'
+import { type SourceLanguage, type TargetLanguage } from './settings.js'
 
 const __dirname = new URL('.', import.meta.url).pathname
 

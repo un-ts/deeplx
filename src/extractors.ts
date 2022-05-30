@@ -1,4 +1,4 @@
-import { SourceLanguage } from './settings.js'
+import { type SourceLanguage } from './settings.js'
 
 export interface TranslatedSentences {
   result: {

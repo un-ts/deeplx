@@ -2,12 +2,6 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var _got = require('got');
-
-function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
-
-var _got__default = /*#__PURE__*/_interopDefaultLegacy(_got);
-
 function extractTranslatedSentences(response) {
   return response.result.translations.reduce((sentences, translation) => {
     sentences.push(translation.beams[0].postprocessed_sentence);
@@ -135,6 +129,9 @@ function createAbbreviationsDictionary(languages = SUPPORTED_LANGUAGES) {
 function abbreviateLanguage(language) {
   return createAbbreviationsDictionary()[language.toLowerCase()];
 }
+function importEsm(modulePath) {
+  return new Function("modulePath", "return import(modulePath)")(modulePath);
+}
 
 var __async = (__this, __arguments, generator) => {
   return new Promise((resolve, reject) => {
@@ -156,32 +153,42 @@ var __async = (__this, __arguments, generator) => {
     step((generator = generator.apply(__this, __arguments)).next());
   });
 };
-const got = _got__default["default"].extend({
-  headers: {
-    accept: "*/*",
-    "accept-language": "en-US;q=0.8,en;q=0.7",
-    authority: "www2.deepl.com",
-    "content-type": "application/json",
-    origin: "https://www.deepl.com",
-    referer: "https://www.deepl.com/translator",
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-site",
-    "user-agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Mobile Safari/537.36"
-  },
-  stringifyJson(object) {
-    return JSON.stringify(object).replace('"method":"', () => {
-      const self = object;
-      if ((self.id + 3) % 13 === 0 || (self.id + 5) % 29 === 0) {
-        return '"method" : "';
-      }
-      return '"method": "';
-    });
-  }
-});
+let _got;
+function getGot() {
+  return __async(this, null, function* () {
+    if (!_got) {
+      const got = yield importEsm("got");
+      _got = got.default.extend({
+        headers: {
+          accept: "*/*",
+          "accept-language": "en-US;q=0.8,en;q=0.7",
+          authority: "www2.deepl.com",
+          "content-type": "application/json",
+          origin: "https://www.deepl.com",
+          referer: "https://www.deepl.com/translator",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "same-site",
+          "user-agent": "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Mobile Safari/537.36"
+        },
+        stringifyJson(object) {
+          return JSON.stringify(object).replace('"method":"', () => {
+            const self = object;
+            if ((self.id + 3) % 13 === 0 || (self.id + 5) % 29 === 0) {
+              return '"method" : "';
+            }
+            return '"method": "';
+          });
+        }
+      });
+    }
+    return _got;
+  });
+}
 function splitSentences(text, sourceLanguage, identifier) {
   return __async(this, null, function* () {
     const data = generateSplitSentencesRequestData(text, sourceLanguage, identifier);
+    const got = yield getGot();
     return yield got.post(API_URL, {
       json: data
     }).json();
@@ -196,6 +203,7 @@ function requestTranslation(text, targetLanguage, sourceLanguage, identifier, al
   return __async(this, null, function* () {
     const res = yield splitSentences(text, sourceLanguage, identifier);
     const data = generateTranslationRequestData(sourceLanguage === "auto" ? res.result.lang : sourceLanguage, targetLanguage, extractSplitSentences(res), identifier, alternatives, formalityTone);
+    const got = yield getGot();
     return yield got.post(API_URL, {
       json: data
     }).json();
@@ -223,6 +231,7 @@ exports.generateJobs = generateJobs;
 exports.generateSplitSentencesRequestData = generateSplitSentencesRequestData;
 exports.generateTimestamp = generateTimestamp;
 exports.generateTranslationRequestData = generateTranslationRequestData;
+exports.importEsm = importEsm;
 exports.randRange = randRange;
 exports.requestTranslation = requestTranslation;
 exports.splitIntoSentences = splitIntoSentences;

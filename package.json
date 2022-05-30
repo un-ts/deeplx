@@ -50,7 +50,7 @@
   },
   "dependencies": {
     "commander": "^9.3.0",
-    "got": "^11.8.5",
+    "got": "^12.1.0",
     "tslib": "^2.4.0"
   },
   "devDependencies": {
