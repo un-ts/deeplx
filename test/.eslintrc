@@ -1,0 +1,6 @@
+{
+  "rules": {
+    "@typescript-eslint/no-magic-numbers": 0,
+    "jest/no-standalone-expect": 0
+  }
+}

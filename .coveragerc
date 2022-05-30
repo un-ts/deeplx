@@ -1,6 +1,0 @@
-[run]
-omit =
-    deepl/__main__.py
-    venv/*
-    tests/*
-    setup.py
