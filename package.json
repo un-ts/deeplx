@@ -1,6 +1,6 @@
 {
   "name": "deepl-translate",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "An unofficial Node package to translate text using [DeepL](https://www.deepl.com).",
   "author": "JounQin <admin@1stg.me>",
