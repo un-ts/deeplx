@@ -1,6 +1,6 @@
 coverage
 lib
 CHANGELOG.md
-/api/_deepl.js
+/api/_deeplx.js
 /public/index.html
 !/.*.cjs

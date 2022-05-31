@@ -41,7 +41,7 @@
     "lint": "run-p lint:*",
     "lint:es": "eslint . --cache --max-warnings 10",
     "lint:tsc": "tsc --noEmit",
-    "postbuild": "cp lib/index.cjs api/_deepl.js",
+    "postbuild": "cp lib/index.cjs api/_deeplx.js",
     "prepare": "simple-git-hooks || exit 0",
     "prerelease": "pnpm build",
     "release": "changeset publish",
