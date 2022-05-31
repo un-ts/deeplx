@@ -18,14 +18,10 @@ export default async (
   req: VercelRequest,
   res: VercelResponse,
 ): Promise<void> => {
-  const {
-    text,
-    source_lang: sourceLang,
-    target_lang: targetLang,
-    // type-coverage:ignore-next-line
-  } = req.body as RequestParams
+  // type-coverage:ignore-next-line
+  const body = req.body as RequestParams | undefined
 
-  if (req.method !== 'POST') {
+  if (!body || req.method !== 'POST') {
     res.end(`DeepL Translate Api
 
 POST {"text": "have a try", "source_lang": "auto", "target_lang": "ZH"} to /translate
@@ -33,6 +29,8 @@ POST {"text": "have a try", "source_lang": "auto", "target_lang": "ZH"} to /tran
 https://github.com/rx-ts/deeplx`)
     return
   }
+
+  const { text, source_lang: sourceLang, target_lang: targetLang } = body
 
   if (!abbreviateLanguage(targetLang)) {
     res.status(NOT_ALLOWED)
