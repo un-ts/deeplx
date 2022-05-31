@@ -91,13 +91,41 @@ export async function requestTranslation(
 }
 
 export async function translate(
+  text: null | undefined,
+  targetLanguage: TargetLanguage,
+  sourceLanguage?: SourceLanguage,
+  identifier?: number,
+  alternatives?: number,
+  formalityTone?: 'formal' | 'informal',
+): Promise<undefined>
+export async function translate(
   text: string,
+  targetLanguage: TargetLanguage,
+  sourceLanguage?: SourceLanguage,
+  identifier?: number,
+  alternatives?: number,
+  formalityTone?: 'formal' | 'informal',
+): Promise<string>
+export async function translate(
+  text: string | null | undefined,
+  targetLanguage: TargetLanguage,
+  sourceLanguage?: SourceLanguage,
+  identifier?: number,
+  alternatives?: number,
+  formalityTone?: 'formal' | 'informal',
+): Promise<string | undefined>
+export async function translate(
+  text: string | null | undefined,
   targetLanguage: TargetLanguage,
   sourceLanguage: SourceLanguage = AUTO,
   identifier?: number,
   alternatives?: number,
   formalityTone?: 'formal' | 'informal',
 ) {
+  text = text?.trim()
+  if (!text) {
+    return text
+  }
   return extractTranslatedSentences(
     await requestTranslation(
       text,
