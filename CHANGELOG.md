@@ -1,5 +1,11 @@
 # deeplx
 
+## 0.1.1
+
+### Patch Changes
+
+- [#4](https://github.com/rx-ts/deeplx/pull/4) [`f7a6eb8`](https://github.com/rx-ts/deeplx/commit/f7a6eb8c1cd6f069969db4667f195e0ae195a34b) Thanks [@JounQin](https://github.com/JounQin)! - feat: handle empty text earlier
+
 ## 0.1.0
 
 ### Minor Changes
