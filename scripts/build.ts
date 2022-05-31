@@ -22,7 +22,7 @@ const main = async () => {
             name="viewport"
             content="width=device-width, initial-scale=1.0"
           />
-          <title>Deepl Translate</title>
+          <title>DeepLx</title>
           <link
             rel="icon"
             type="image/png"

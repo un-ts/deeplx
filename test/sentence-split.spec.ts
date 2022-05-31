@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals'
 
-import { splitIntoSentences } from 'deepl-translate'
+import { splitIntoSentences } from 'deeplx'
 
 if (process.env.CI === 'true') {
   jest.setTimeout(20 * 1000)

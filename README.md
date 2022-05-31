@@ -1,15 +1,15 @@
 # DeepL Translate
 
-[![GitHub Actions](https://github.com/rx-ts/deepl-translate/workflows/CI/badge.svg)](https://github.com/rx-ts/deepl-translate/actions/workflows/ci.yml)
-[![Codecov](https://img.shields.io/codecov/c/github/rx-ts/deepl-translate.svg)](https://codecov.io/gh/rx-ts/deepl-translate)
-[![Codacy Grade](https://img.shields.io/codacy/grade/1d00ac27c99d4412bb70211e258706ab)](https://app.codacy.com/gh/rx-ts/deepl-translate)
-[![type-coverage](https://img.shields.io/badge/dynamic/json.svg?label=type-coverage&prefix=%E2%89%A5&suffix=%&query=$.typeCoverage.atLeast&uri=https%3A%2F%2Fraw.githubusercontent.com%2Frx-ts%2Fdeepl-translate%2Fmaster%2Fpackage.json)](https://github.com/plantain-00/type-coverage)
-[![npm](https://img.shields.io/npm/v/deepl-translate.svg)](https://www.npmjs.com/package/deepl-translate)
-[![GitHub Release](https://img.shields.io/github/release/rx-ts/deepl-translate)](https://github.com/rx-ts/deepl-translate/releases)
+[![GitHub Actions](https://github.com/rx-ts/deeplx/workflows/CI/badge.svg)](https://github.com/rx-ts/deeplx/actions/workflows/ci.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/rx-ts/deeplx.svg)](https://codecov.io/gh/rx-ts/deeplx)
+[![Codacy Grade](https://img.shields.io/codacy/grade/1d00ac27c99d4412bb70211e258706ab)](https://app.codacy.com/gh/rx-ts/deeplx)
+[![type-coverage](https://img.shields.io/badge/dynamic/json.svg?label=type-coverage&prefix=%E2%89%A5&suffix=%&query=$.typeCoverage.atLeast&uri=https%3A%2F%2Fraw.githubusercontent.com%2Frx-ts%2Fdeeplx%2Fmaster%2Fpackage.json)](https://github.com/plantain-00/type-coverage)
+[![npm](https://img.shields.io/npm/v/deeplx.svg)](https://www.npmjs.com/package/deeplx)
+[![GitHub Release](https://img.shields.io/github/release/rx-ts/deeplx)](https://github.com/rx-ts/deeplx/releases)
 
-[![David Peer](https://img.shields.io/david/peer/rx-ts/deepl-translate.svg)](https://david-dm.org/rx-ts/deepl-translate?type=peer)
-[![David](https://img.shields.io/david/rx-ts/deepl-translate.svg)](https://david-dm.org/rx-ts/deepl-translate)
-[![David Dev](https://img.shields.io/david/dev/rx-ts/deepl-translate.svg)](https://david-dm.org/rx-ts/deepl-translate?type=dev)
+[![David Peer](https://img.shields.io/david/peer/rx-ts/deeplx.svg)](https://david-dm.org/rx-ts/deeplx?type=peer)
+[![David](https://img.shields.io/david/rx-ts/deeplx.svg)](https://david-dm.org/rx-ts/deeplx)
+[![David Dev](https://img.shields.io/david/dev/rx-ts/deeplx.svg)](https://david-dm.org/rx-ts/deeplx?type=dev)
 
 [![Conventional Commits](https://img.shields.io/badge/conventional%20commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![Renovate enabled](https://img.shields.io/badge/renovate-enabled-brightgreen.svg)](https://renovatebot.com)
@@ -23,13 +23,13 @@ An unofficial Node package to translate text using [DeepL](https://www.deepl.com
 
 ```sh
 # npm
-npm i deepl-translate
+npm i deeplx
 
 # pnpm
-pnpm add deepl-translate
+pnpm add deeplx
 
 # yarn
-yarn add deepl-translate
+yarn add deeplx
 ```
 
 ## Usage
@@ -72,13 +72,13 @@ You can either input the abbreviation or the language written in english.
 #### Help
 
 ```sh
-deepl --help
+deeplx --help
 ```
 
 ```log
-Usage: deepl [options]
+Usage: deeplx [options]
 
-An unofficial Node package to translate text using [DeepL](https://www.deepl.com).
+An unofficial Node package to translate text using [DeepL](https://www.deeplx.com).
 
 Options:
   -V, --version                  output the version number
@@ -95,7 +95,7 @@ Options:
 This will translate a Spanish (`ES`) text into Russian (`RU`):
 
 ```sh
-deepl -tl russian -t "¡Buenos días!"
+deeplx -tl russian -t "¡Buenos días!"
 ```
 
 ```plain
@@ -107,7 +107,7 @@ deepl -tl russian -t "¡Buenos días!"
 This will translate the file (`test.txt`) text from Italian (`IT`) into Portuguese (`PT`):
 
 ```sh
-deepl -tl PT -f test.txt
+deeplx -tl PT -f test.txt
 ```
 
 #### Example 3
@@ -115,7 +115,7 @@ deepl -tl PT -f test.txt
 This will translate a Spanish (`ES`) text into Russian (`RU`) in _formal_ tone:
 
 ```sh
-deepl -tl RU --text "¿Cómo te llamas?" --formal
+deeplx -tl RU --text "¿Cómo te llamas?" --formal
 ```
 
 ```plain
@@ -129,7 +129,7 @@ Note: _informal_ would be "_Как **тебя** зовут?_"
 This will translate a Japanese (`JP`) text into German (`DE`) in _informal_ tone:
 
 ```sh
-deepl -tl DE --text "お元気ですか？" --formal false
+deeplx -tl DE --text "お元気ですか？" --formal false
 ```
 
 ```plain
@@ -145,7 +145,7 @@ Note: _formal_ would be "_Wie geht es **Ihnen**?_"
 This will translate a Chinese (`ZH`) text into Dutch (`NL`):
 
 ```js
-import { translate } from 'deepl-translate'
+import { translate } from 'deeplx'
 
 translate('你好', 'NL', 'ZH')
 ```
@@ -159,7 +159,7 @@ translate('你好', 'NL', 'ZH')
 This will translate a `danish` text into `german` in informal tone:
 
 ```js
-import { translate } from 'deepl-translate'
+import { translate } from 'deeplx'
 
 translate('Ring til mig!', 'german', 'danish', undefined, undefined, false)
 ```

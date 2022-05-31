@@ -1,4 +1,4 @@
-import { abbreviateLanguage } from 'deepl-translate'
+import { abbreviateLanguage } from 'deeplx'
 
 test('abbreviateLanguage', () => {
   expect(abbreviateLanguage('RuSsIaN')).toBe('RU')

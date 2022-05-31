@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals'
 
-import { randRange, translate } from 'deepl-translate'
+import { randRange, translate } from 'deeplx'
 
 if (process.env.CI === 'true') {
   jest.setTimeout(20 * 1000)

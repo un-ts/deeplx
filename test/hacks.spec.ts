@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 
-import { calculateValidTimestamp, generateId } from 'deepl-translate'
+import { calculateValidTimestamp, generateId } from 'deeplx'
 
 test('calculateValidTimestamp', () => {
   expect(calculateValidTimestamp(10, 0)).toBe(10)

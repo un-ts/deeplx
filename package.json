@@ -1,5 +1,5 @@
 {
-  "name": "deepl-translate",
+  "name": "deeplx",
   "version": "0.1.0",
   "type": "module",
   "description": "An unofficial Node package to translate text using [DeepL](https://www.deepl.com).",
@@ -9,7 +9,7 @@
     "node": ">=12.20"
   },
   "bin": {
-    "deepl": "./lib/cli.js"
+    "deeplx": "./lib/cli.js"
   },
   "main": "./lib/index.cjs",
   "module": "./lib/index.js",
@@ -26,6 +26,7 @@
     "deepl",
     "deepl-api",
     "deepl-free",
+    "deeplx",
     "deepl-translate",
     "deepl-translation",
     "deepl-translator",

@@ -7,7 +7,7 @@ const config: Config.InitialOptions = {
   extensionsToTreatAsEsm: ['.ts'],
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
-    '^deepl-translate$': '<rootDir>/src/index.ts',
+    '^deeplx$': '<rootDir>/src/index.ts',
   },
   globals: {
     'ts-jest': {

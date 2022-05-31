@@ -1,7 +1,7 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
-import type { SourceLanguage, TargetLanguage } from 'deepl-translate'
+import type { SourceLanguage, TargetLanguage } from 'deeplx'
 
-// Workaround for Vercel `Cannot find module 'deepl-translate'`
+// Workaround for Vercel `Cannot find module 'deeplx'`
 import { abbreviateLanguage, translate } from './_deepl'
 
 export interface RequestParams {
@@ -11,8 +11,6 @@ export interface RequestParams {
 }
 
 const OK = 200
-const NO_CONTENT = 204
-const NOT_ALLOWED = 405
 const INTERNAL_ERROR = 500
 
 export default async (
@@ -26,30 +24,14 @@ export default async (
     // type-coverage:ignore-next-line
   } = req.body as RequestParams
 
-  if (req.method !== 'POST' || !abbreviateLanguage(targetLang)) {
-    res.status(NOT_ALLOWED)
-    res.end(
-      JSON.stringify({
-        code: NOT_ALLOWED,
-      }),
-    )
-    return
-  }
+  text = text?.trim()
 
-  if (text == null) {
-    res.status(NO_CONTENT)
-    return
-  }
+  if (req.method !== 'POST' || !text || !abbreviateLanguage(targetLang)) {
+    res.end(`DeepL Translate Api
 
-  text = text.trim()
+POST {"text": "have a try", "source_lang": "auto", "target_lang": "ZH"} to /translate
 
-  if (!text) {
-    res.end(
-      JSON.stringify({
-        code: OK,
-        data: '',
-      }),
-    )
+https://github.com/rx-ts/deeplx`)
     return
   }
 

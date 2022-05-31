@@ -3,7 +3,7 @@
   "changelog": [
     "@changesets/changelog-github",
     {
-      "repo": "rx-ts/deepl-translate"
+      "repo": "rx-ts/deeplx"
     }
   ],
   "commit": false,

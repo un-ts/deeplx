@@ -1,4 +1,4 @@
-import { generateJobs } from 'deepl-translate'
+import { generateJobs } from 'deeplx'
 
 test('generate jobs with one sentence', () => {
   const sentences = ['Forever alone.']

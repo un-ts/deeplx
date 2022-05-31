@@ -1,1 +1,1 @@
-export * from 'deepl-translate'
+export * from 'deeplx'
