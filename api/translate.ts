@@ -30,6 +30,8 @@ https://github.com/rx-ts/deeplx`)
     return
   }
 
+  res.setHeader('Content-Type', 'application/json')
+
   const { text, source_lang: sourceLang, target_lang: targetLang } = body
 
   if (!abbreviateLanguage(targetLang)) {
