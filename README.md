@@ -19,6 +19,10 @@
 
 An unofficial Node package to translate text using [DeepL](https://www.deepl.com).
 
+## Online Service
+
+<https://deeplx.vercel.app/translate>
+
 ## Installation
 
 ```sh
@@ -147,7 +151,7 @@ This will translate a Chinese (`ZH`) text into Dutch (`NL`):
 ```js
 import { translate } from 'deeplx'
 
-translate('你好', 'NL', 'ZH')
+translate('你好', 'NL')
 ```
 
 ```log
