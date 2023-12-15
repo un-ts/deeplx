@@ -66,6 +66,7 @@
     "type-coverage": "^2.21.1",
     "typescript": "^4.7.2"
   },
+  "packageManager": "pnpm@8.12.1",
   "typeCoverage": {
     "atLeast": 100,
     "cache": true,

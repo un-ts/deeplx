@@ -10,9 +10,9 @@ jobs:
     strategy:
       matrix:
         node:
-          - 14
           - 16
           - 18
+          - 20
         os:
           - ubuntu-latest
     runs-on: ${{ matrix.os }}
@@ -50,7 +50,6 @@ jobs:
         uses: codecov/codecov-action@v3
 
       - name: Codacy Coverage
-        run: bash <(curl -Ls https://coverage.codacy.com/get.sh) -- -r coverage/*.json
-        env:
-          CODACY_ACCOUNT_TOKEN: ${{ secrets.CODACY_ACCOUNT_TOKEN }}
-          CODACY_PROJECT_TOKEN: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        uses: codacy/codacy-coverage-reporter-action@v1
+        with:
+          project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
