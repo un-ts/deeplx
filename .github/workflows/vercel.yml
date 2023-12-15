@@ -1,0 +1,30 @@
+name: Vercel Deploy
+
+on:
+  push:
+    branches:
+      - master
+  pull_request_target: null
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Branch
+        id: branch
+        if: ${{ github.ref  == 'refs/heads/master' }}
+        run: |
+          echo "args=--prod" >> $GITHUB_OUTPUT
+          echo "comment=false" >> $GITHUB_OUTPUT
+
+      - name: Deploy
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-args: ${{ steps.branch.outputs.args }}
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          github-comment: ${{ steps.branch.outputs.comment != 'false' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}

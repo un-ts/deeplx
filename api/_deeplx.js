@@ -67,7 +67,8 @@ const SUPPORTED_LANGUAGES = [
   { code: "SK", language: "Slovak" },
   { code: "SL", language: "Slovenian" },
   { code: "ES", language: "Spanish" },
-  { code: "SV", language: "Swedish" }
+  { code: "SV", language: "Swedish" },
+  { code: "TR", language: "Turkish" }
 ];
 const SUPPORTED_FORMALITY_TONES = ["formal", "informal"];
 
@@ -204,6 +205,10 @@ function requestTranslation(text, targetLanguage, sourceLanguage, identifier, al
 function translate(_0, _1) {
   return __async(this, arguments, function* (text, targetLanguage, sourceLanguage = AUTO, identifier, alternatives, formalityTone) {
     var _a;
+    text = text == null ? void 0 : text.trim();
+    if (!text) {
+      return text;
+    }
     return extractTranslatedSentences(yield requestTranslation(text, abbreviateLanguage(targetLanguage), (_a = abbreviateLanguage(sourceLanguage)) != null ? _a : "auto", identifier, alternatives, formalityTone)).join(" ");
   });
 }
