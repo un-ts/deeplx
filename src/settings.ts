@@ -44,4 +44,4 @@ export type SourceLanguage = TargetLanguage | 'auto'
 
 export const SUPPORTED_FORMALITY_TONES = ['formal', 'informal'] as const
 
-export type Formality = (typeof SUPPORTED_FORMALITY_TONES)[number]
+export type FormalityTone = (typeof SUPPORTED_FORMALITY_TONES)[number]

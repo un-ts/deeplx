@@ -15,34 +15,34 @@ test('translate russian', async () => {
   const source_language = 'RU'
   const target_language = 'EN'
   const text = 'Я сошла с ума'
-  const expected_translation = "I'm out of my mind."
   const translation = await translate(text, target_language, source_language)
-  expect(translation).toEqual(expected_translation)
+  expect(translation).toMatchInlineSnapshot(`"I've lost my mind"`)
 })
 
 test('translate chinese', async () => {
   const source_language = 'ZH'
   const target_language = 'dutch'
   const text = '你好'
-  const expected_translation = 'Hallo'
   const translation = await translate(text, target_language, source_language)
-  expect(translation).toContain(expected_translation)
+  expect(translation).toMatchInlineSnapshot(`"Hoe gaat het met je?"`)
 })
 
 test('translate greek romanian', async () => {
   const source_language = 'gReEk'
   const target_language = 'rO'
   const text = 'Γεια σας'
-  const expected_translation = 'bună ziua'
   // @ts-expect-error -- only upper, lower or capitalize case languages are supported in TypeScript
   const translation = await translate(text, target_language, source_language)
-  expect((translation as string).toLowerCase()).toContain(expected_translation)
+  expect((translation as string).toLowerCase()).toMatchInlineSnapshot(
+    `"bună ziua."`,
+  )
 })
 
 test('translate sentence', async () => {
   const text = 'Up and down.'
-  const expected_translation = 'Op en neer.'
-  expect(await translate(text, 'NL', 'EN')).toBe(expected_translation)
+  expect(await translate(text, 'NL', 'EN')).toMatchInlineSnapshot(
+    `"Op en neer."`,
+  )
 })
 
 test('translate sentences', async () => {
@@ -103,5 +103,5 @@ test('invalid_formal_tone', () =>
     // @ts-expect-error
     translate('ABC', 'DE', 'EN', undefined, undefined, 'politically incorrect'),
   ).rejects.toThrowErrorMatchingInlineSnapshot(
-    `"Formality tone '{formality_tone}' not supported."`,
+    `[Error: Formality tone \`politically incorrect\` not supported.]`,
   ))

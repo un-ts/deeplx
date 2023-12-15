@@ -2,7 +2,7 @@ import { generateId, generateTimestamp } from './hacks.js'
 import {
   AUTO,
   SUPPORTED_FORMALITY_TONES,
-  Formality,
+  FormalityTone,
   SourceLanguage,
   TargetLanguage,
 } from './settings.js'
@@ -45,13 +45,13 @@ export function generateJobs(sentences: string[], beams = 1) {
   }))
 }
 
-function generateCommonJobParams(formality?: Formality) {
+function generateCommonJobParams(formality?: FormalityTone) {
   if (!formality) {
     return {}
   }
 
   if (!SUPPORTED_FORMALITY_TONES.includes(formality)) {
-    throw new Error(`Formality tone ${formality} not supported.`)
+    throw new Error(`Formality tone \`${formality}\` not supported.`)
   }
 
   return { formality }
@@ -63,7 +63,7 @@ export function generateTranslationRequestData(
   sentences: string[],
   identifier = generateId(),
   alternatives = 1,
-  formality?: Formality,
+  formality?: FormalityTone,
 ) {
   return {
     jsonrpc: '2.0',

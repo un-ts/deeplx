@@ -10,7 +10,13 @@ import {
   generateTranslationRequestData,
   generateSplitSentencesRequestData,
 } from './generators.js'
-import { API_URL, AUTO, SourceLanguage, TargetLanguage } from './settings.js'
+import {
+  API_URL,
+  AUTO,
+  FormalityTone,
+  SourceLanguage,
+  TargetLanguage,
+} from './settings.js'
 import { abbreviateLanguage } from './utils.js'
 
 const got = _got.extend({
@@ -72,7 +78,7 @@ export async function requestTranslation(
   sourceLanguage: SourceLanguage,
   identifier?: number,
   alternatives?: number,
-  formalityTone?: 'formal' | 'informal',
+  formalityTone?: FormalityTone,
 ) {
   const res = await splitSentences(text, sourceLanguage, identifier)
   const data = generateTranslationRequestData(
@@ -96,7 +102,7 @@ export async function translate(
   sourceLanguage?: SourceLanguage,
   identifier?: number,
   alternatives?: number,
-  formalityTone?: 'formal' | 'informal',
+  formalityTone?: FormalityTone,
 ): Promise<undefined>
 export async function translate(
   text: string,
@@ -104,7 +110,7 @@ export async function translate(
   sourceLanguage?: SourceLanguage,
   identifier?: number,
   alternatives?: number,
-  formalityTone?: 'formal' | 'informal',
+  formalityTone?: FormalityTone,
 ): Promise<string>
 export async function translate(
   text: string | null | undefined,
@@ -112,7 +118,7 @@ export async function translate(
   sourceLanguage?: SourceLanguage,
   identifier?: number,
   alternatives?: number,
-  formalityTone?: 'formal' | 'informal',
+  formalityTone?: FormalityTone,
 ): Promise<string | undefined>
 export async function translate(
   text: string | null | undefined,
@@ -120,7 +126,7 @@ export async function translate(
   sourceLanguage: SourceLanguage = AUTO,
   identifier?: number,
   alternatives?: number,
-  formalityTone?: 'formal' | 'informal',
+  formalityTone?: FormalityTone,
 ) {
   text = text?.trim()
   if (!text) {
