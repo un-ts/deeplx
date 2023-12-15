@@ -39,7 +39,7 @@ const got = _got.extend({
   },
 })
 
-export async function splitSentences(
+export function splitSentences(
   text: string,
   sourceLanguage?: SourceLanguage,
   identifier?: number,
@@ -49,7 +49,7 @@ export async function splitSentences(
     sourceLanguage,
     identifier,
   )
-  return await got
+  return got
     .post(API_URL, {
       json: data,
     })
@@ -83,7 +83,7 @@ export async function requestTranslation(
     alternatives,
     formalityTone,
   )
-  return await got
+  return got
     .post(API_URL, {
       json: data,
     })

@@ -15,10 +15,11 @@ jobs:
           - 20
         os:
           - ubuntu-latest
+      fail-fast: false
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2
@@ -26,7 +27,7 @@ jobs:
           version: 8
 
       - name: Setup Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
@@ -44,7 +45,6 @@ jobs:
 
       - name: Test
         run: pnpm test
-        continue-on-error: true
 
       - name: Codecov
         uses: codecov/codecov-action@v3

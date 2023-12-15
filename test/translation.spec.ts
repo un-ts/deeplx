@@ -1,9 +1,9 @@
-import { jest } from '@jest/globals'
-
 import { randRange, translate } from 'deeplx'
 
 if (process.env.CI === 'true') {
-  jest.setTimeout(20 * 1000)
+  vi.setConfig({
+    testTimeout: 20_000,
+  })
 }
 
 const sleep = (timeout?: number) =>

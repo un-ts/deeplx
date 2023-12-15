@@ -1,8 +1,9 @@
 import { generateId, generateTimestamp } from './hacks.js'
 import {
   AUTO,
-  SourceLanguage,
   SUPPORTED_FORMALITY_TONES,
+  Formality,
+  SourceLanguage,
   TargetLanguage,
 } from './settings.js'
 
@@ -34,27 +35,25 @@ export interface Job {
 }
 
 export function generateJobs(sentences: string[], beams = 1) {
-  return sentences.reduce<Job[]>((jobs, sentence, idx) => {
-    jobs.push({
-      kind: 'default',
-      raw_en_sentence: sentence,
-      raw_en_context_before: sentences.slice(0, idx),
-      raw_en_context_after:
-        idx + 1 < sentences.length ? [sentences[idx + 1]] : [],
-      preferred_num_beams: beams,
-    })
-    return jobs
-  }, [])
+  return sentences.map<Job>((sentence, idx) => ({
+    kind: 'default',
+    raw_en_sentence: sentence,
+    raw_en_context_before: sentences.slice(0, idx),
+    raw_en_context_after:
+      idx + 1 < sentences.length ? [sentences[idx + 1]] : [],
+    preferred_num_beams: beams,
+  }))
 }
 
-function generateCommonJobParams(formality?: 'formal' | 'informal') {
+function generateCommonJobParams(formality?: Formality) {
   if (!formality) {
     return {}
   }
 
   if (!SUPPORTED_FORMALITY_TONES.includes(formality)) {
-    throw new Error("Formality tone '{formality_tone}' not supported.")
+    throw new Error(`Formality tone ${formality} not supported.`)
   }
+
   return { formality }
 }
 
@@ -64,7 +63,7 @@ export function generateTranslationRequestData(
   sentences: string[],
   identifier = generateId(),
   alternatives = 1,
-  formality?: 'formal' | 'informal',
+  formality?: Formality,
 ) {
   return {
     jsonrpc: '2.0',

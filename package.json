@@ -5,8 +5,9 @@
   "description": "An unofficial Node package to translate text using [DeepL](https://www.deepl.com).",
   "author": "JounQin <admin@1stg.me>",
   "license": "MIT",
+  "packageManager": "pnpm@8.12.1",
   "engines": {
-    "node": ">=12.20"
+    "node": ">=14.8"
   },
   "bin": {
     "deeplx": "./lib/cli.js"
@@ -36,37 +37,38 @@
   ],
   "scripts": {
     "build": "run-p build:*",
-    "build:r": "r -f cjs",
-    "build:ts": "tsc -p tsconfig.lib.json",
+    "build:r": "r -f esm",
+    "build:tsc": "tsc -p tsconfig.lib.json",
     "lint": "run-p lint:*",
     "lint:es": "eslint . --cache --max-warnings 10",
     "lint:tsc": "tsc --noEmit",
-    "postbuild": "cp lib/index.cjs api/_deeplx.js",
+    "postbuild:r": "cp lib/index.esm.mjs api/_deeplx.js",
     "prepare": "simple-git-hooks || exit 0",
     "prerelease": "pnpm build",
     "release": "changeset publish",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test": "vitest run --coverage",
     "typecov": "type-coverage",
-    "vercel-build": "pnpm build && esno scripts/build"
+    "vercel-build": "pnpm build && tsx scripts/build"
   },
   "dependencies": {
-    "commander": "^9.3.0",
-    "got": "^11.8.5",
-    "tslib": "^2.4.0"
+    "commander": "^11.1.0",
+    "got": "^14.0.0",
+    "tslib": "^2.6.2"
   },
   "devDependencies": {
-    "@1stg/lib-config": "^6.1.3",
-    "@changesets/changelog-github": "^0.4.4",
-    "@changesets/cli": "^2.22.0",
-    "@octokit/request": "^5.6.3",
-    "@types/jest": "^27.5.1",
-    "@vercel/node": "^1.15.3",
-    "esno": "^0.16.3",
-    "ts-jest": "^28.0.3",
-    "type-coverage": "^2.21.1",
-    "typescript": "^4.7.2"
+    "@1stg/lib-config": "^12.0.1",
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.27.1",
+    "@octokit/request": "^8.1.6",
+    "@types/web": "^0.0.127",
+    "@vitest/coverage-istanbul": "^1.0.4",
+    "tsx": "^4.6.2",
+    "type-coverage": "^2.27.0",
+    "typescript": "^5.3.3",
+    "unplugin-auto-import": "^0.17.2",
+    "vercel": "^32.7.2",
+    "vitest": "^1.0.4"
   },
-  "packageManager": "pnpm@8.12.1",
   "typeCoverage": {
     "atLeast": 100,
     "cache": true,

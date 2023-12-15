@@ -31,7 +31,7 @@ export const SUPPORTED_LANGUAGES = [
   { code: 'ID', language: 'Indonesian' },
 ] as const
 
-export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number]
+export type SupportedLanguage = (typeof SUPPORTED_LANGUAGES)[number]
 
 export type Language = SupportedLanguage['code'] | SupportedLanguage['language']
 
@@ -42,4 +42,6 @@ export type TargetLanguage =
 
 export type SourceLanguage = TargetLanguage | 'auto'
 
-export const SUPPORTED_FORMALITY_TONES = ['formal', 'informal']
+export const SUPPORTED_FORMALITY_TONES = ['formal', 'informal'] as const
+
+export type Formality = (typeof SUPPORTED_FORMALITY_TONES)[number]

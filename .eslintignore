@@ -3,4 +3,5 @@ lib
 CHANGELOG.md
 /api/_deeplx.js
 /public/index.html
+/auto-imports.d.ts
 !/.*.cjs
