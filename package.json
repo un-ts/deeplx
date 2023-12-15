@@ -1,6 +1,6 @@
 {
   "name": "deeplx",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "type": "module",
   "description": "An unofficial Node package to translate text using [DeepL](https://www.deepl.com).",
   "author": "JounQin <admin@1stg.me>",

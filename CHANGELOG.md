@@ -1,5 +1,11 @@
 # deeplx
 
+## 0.1.2
+
+### Patch Changes
+
+- [#7](https://github.com/un-ts/deeplx/pull/7) [`b24ab73`](https://github.com/un-ts/deeplx/commit/b24ab73c26c80db240a2d63936e00c96a010b507) Thanks [@toprak](https://github.com/toprak)! - feat: add Turkish support
+
 ## 0.1.1
 
 ### Patch Changes
