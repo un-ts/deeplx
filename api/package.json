@@ -2,6 +2,7 @@
   "name": "deepl-api",
   "type": "module",
   "dependencies": {
-    "got": "^14.0.0"
+    "node-fetch": "^3.3.2",
+    "x-fetch": "^0.1.3"
   }
 }

@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import './fetch.js'
+
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { URL } from 'node:url'
