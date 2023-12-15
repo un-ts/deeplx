@@ -26,7 +26,7 @@ export default async (
 
 POST {"text": "have a try", "source_lang": "auto", "target_lang": "ZH"} to /translate
 
-https://github.com/rx-ts/deeplx`)
+https://github.com/un-ts/deeplx`)
     return
   }
 
