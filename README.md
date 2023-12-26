@@ -15,6 +15,14 @@
 
 An unofficial Node package to translate text using [DeepL](https://www.deepl.com).
 
+## Deploy
+
+### Deploy With Vercel(Recommended)
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/un-ts/deeplx)
+
+Just click the button above and follow the instructions to deploy your own copy of the app.
+
 ## Online Service
 
 <https://deeplx.vercel.app/translate>
