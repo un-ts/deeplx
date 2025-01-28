@@ -1,5 +1,11 @@
 # deeplx
 
+## 0.1.3
+
+### Patch Changes
+
+- [#13](https://github.com/un-ts/deeplx/pull/13) [`d668994`](https://github.com/un-ts/deeplx/commit/d66899410976f1fb57816b5a1926b87b20615aff) Thanks [@niizam](https://github.com/niizam)! - Add 'Indonesian' support
+
 ## 0.1.2
 
 ### Patch Changes
