@@ -1,21 +1,21 @@
 import { ApiMethod, fetchApi, interceptors } from 'x-fetch'
 
 import {
+  type SplittedSentences,
+  type TranslatedSentences,
   extractTranslatedSentences,
   extractSplitSentences,
-  SplittedSentences,
-  TranslatedSentences,
 } from './extractors.js'
 import {
   generateTranslationRequestData,
   generateSplitSentencesRequestData,
 } from './generators.js'
 import {
+  type FormalityTone,
+  type SourceLanguage,
+  type TargetLanguage,
   API_URL,
   AUTO,
-  FormalityTone,
-  SourceLanguage,
-  TargetLanguage,
 } from './settings.js'
 import { abbreviateLanguage } from './utils.js'
 

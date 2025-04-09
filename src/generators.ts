@@ -1,10 +1,10 @@
 import { generateId, generateTimestamp } from './hacks.js'
 import {
+  type FormalityTone,
+  type SourceLanguage,
+  type TargetLanguage,
   AUTO,
   SUPPORTED_FORMALITY_TONES,
-  FormalityTone,
-  SourceLanguage,
-  TargetLanguage,
 } from './settings.js'
 
 export function generateSplitSentencesRequestData(

@@ -1,4 +1,4 @@
-import { SUPPORTED_LANGUAGES, TargetLanguage } from './settings.js'
+import { SUPPORTED_LANGUAGES, type TargetLanguage } from './settings.js'
 
 export function createAbbreviationsDictionary(languages = SUPPORTED_LANGUAGES) {
   return languages.reduce<Record<string, string>>((acc, lang) => {

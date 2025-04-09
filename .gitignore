@@ -1,6 +1,7 @@
 .*cache
 .type-coverage
 .vercel
+.yarn
 coverage
 lib
 node_modules

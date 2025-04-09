@@ -9,7 +9,7 @@ import { URL } from 'node:url'
 import { program } from 'commander'
 
 import { translate } from './api.js'
-import { SourceLanguage, TargetLanguage } from './settings.js'
+import type { SourceLanguage, TargetLanguage } from './settings.js'
 
 const __dirname = new URL('.', import.meta.url).pathname
 
@@ -50,6 +50,7 @@ const translated = await translate(
   sourceLanguage,
   undefined,
   undefined,
+  // eslint-disable-next-line sonarjs/no-nested-conditional
   formal == null ? formal : formal ? 'formal' : 'informal',
 )
 

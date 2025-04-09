@@ -16,6 +16,7 @@ export function generateTimestamp(sentences: string[]) {
 }
 
 export function randRange(min: number, max: number) {
+  // eslint-disable-next-line sonarjs/pseudo-random
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 

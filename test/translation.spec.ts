@@ -1,3 +1,5 @@
+import { setTimeout } from 'node:timers/promises'
+
 import { randRange, translate } from 'deeplx'
 
 if (process.env.CI === 'true') {
@@ -6,10 +8,7 @@ if (process.env.CI === 'true') {
   })
 }
 
-const sleep = (timeout?: number) =>
-  new Promise<void>(resolve => setTimeout(resolve, timeout))
-
-beforeEach(() => sleep(randRange(500, 1000)))
+beforeEach(() => setTimeout(randRange(500, 1000)))
 
 test('translate russian', async () => {
   const source_language = 'RU'
@@ -99,8 +98,8 @@ test('informal german translation', async () => {
 })
 
 test('invalid_formal_tone', () =>
-  expect(() =>
-    // @ts-expect-error
+  expect(
+    // @ts-expect-error -- intended
     translate('ABC', 'DE', 'EN', undefined, undefined, 'politically incorrect'),
   ).rejects.toThrowErrorMatchingInlineSnapshot(
     `[Error: Formality tone \`politically incorrect\` not supported.]`,
