@@ -1,6 +1,14 @@
 [
   {
-    "path": "./lib/index.js",
+    "path": "./packages/@deeplx/cli/lib/cli.js",
+    "limit": "820B"
+  },
+  {
+    "path": "./packages/@deeplx/core/lib/index.js",
     "limit": "120B"
+  },
+  {
+    "path": "./packages/deeplx/lib/index.js",
+    "limit": "90B"
   }
 ]

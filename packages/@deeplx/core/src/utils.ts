@@ -2,8 +2,8 @@ import {
   SUPPORTED_LANGUAGES,
   type Language,
   type SupportedCode,
-} from './constants.js'
-import type { PostData } from './types.js'
+} from './constants.ts'
+import type { PostData } from './types.ts'
 
 // getICount returns the number of 'i' characters in the text
 export const getICount = (translateText: string): number => {

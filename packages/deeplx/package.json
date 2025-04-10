@@ -1,0 +1,58 @@
+{
+  "name": "deeplx",
+  "version": "0.2.1",
+  "type": "module",
+  "description": "All in one for `@deeplx/cli` and `@deeplx/core`, a powerful and easy-to-use yet free DeepL API client for Node.js.",
+  "repository": "git+https://github.com/un-ts/deeplx.git",
+  "homepage": "https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core",
+  "author": "JounQin <admin@1stg.me> (https://www.1stG.me)",
+  "funding": "https://opencollective.com/deeplx",
+  "license": "MIT",
+  "engines": {
+    "node": "^12.20 || ^14.18.0 || >=16.0.0"
+  },
+  "bin": "./lib/cli.js",
+  "main": "./lib/index.cjs",
+  "types": "./index.d.cts",
+  "module": "./lib/index.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./lib/index.d.ts",
+        "default": "./lib/index.js"
+      },
+      "module-sync": {
+        "types": "./lib/index.d.ts",
+        "default": "./lib/index.js"
+      },
+      "require": {
+        "types": "./index.d.cts",
+        "default": "./lib/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.d.cts",
+    "lib"
+  ],
+  "keywords": [
+    "deepl",
+    "deepl-api",
+    "deepl-free",
+    "deeplx",
+    "deepl-translate",
+    "deepl-translation",
+    "deepl-translator",
+    "translate",
+    "translate-api",
+    "translator"
+  ],
+  "dependencies": {
+    "@deeplx/cli": "^0.0.0",
+    "@deeplx/core": "^0.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

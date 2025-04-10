@@ -7,5 +7,5 @@
 coverage
 lib
 node_modules
-/api/_deeplx.js
 /public/index.html
+*.tsbuildinfo

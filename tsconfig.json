@@ -2,7 +2,8 @@
   "extends": "@1stg/tsconfig/node16",
   "compilerOptions": {
     "paths": {
-      "deeplx": ["./src/index.ts"]
+      "deeplx": ["./packages/deeplx/src/index.ts"],
+      "@deeplx/core": ["./packages/@deeplx/core/src/index.ts"]
     }
   }
 }

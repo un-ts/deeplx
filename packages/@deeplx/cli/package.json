@@ -1,0 +1,46 @@
+{
+  "name": "@deeplx/cli",
+  "version": "0.0.0",
+  "type": "module",
+  "description": "The cli for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core).",
+  "repository": "git+https://github.com/un-ts/deeplx.git",
+  "homepage": "https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/cli",
+  "author": "JounQin <admin@1stg.me> (https://www.1stG.me)",
+  "funding": "https://opencollective.com/deeplx",
+  "license": "MIT",
+  "engines": {
+    "node": "^12.20 || ^14.18.0 || >=16.0.0"
+  },
+  "bin": "./lib/cli.js",
+  "exports": {
+    ".": {
+      "types": "./lib/cli.d.ts",
+      "default": "./lib/cli.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.d.cts",
+    "lib"
+  ],
+  "keywords": [
+    "deepl",
+    "deepl-api",
+    "deepl-free",
+    "deeplx",
+    "deepl-translate",
+    "deepl-translation",
+    "deepl-translator",
+    "translate",
+    "translate-api",
+    "translator"
+  ],
+  "dependencies": {
+    "@deeplx/core": "^0.0.0",
+    "commander": "^13.1.0",
+    "node-fetch": "^3.3.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

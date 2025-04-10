@@ -8,7 +8,7 @@ import {
   abbreviateLanguage,
   translate,
   HTTP_STATUS_BAD_REQUEST,
-} from 'deeplx'
+} from '@deeplx/core'
 
 export interface RequestParams {
   text: string

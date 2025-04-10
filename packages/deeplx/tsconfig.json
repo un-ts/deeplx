@@ -1,0 +1,9 @@
+{
+  "extends": "@1stg/tsconfig/node16",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": "src",
+    "outDir": "lib"
+  },
+  "include": ["src"]
+}

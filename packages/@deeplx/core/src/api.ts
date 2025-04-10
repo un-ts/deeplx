@@ -1,5 +1,5 @@
-import type { SourceLanguage, TargetLanguage } from './constants.js'
-import { translateByDeepLX } from './translate.js'
+import type { SourceLanguage, TargetLanguage } from './constants.ts'
+import { translateByDeepLX } from './translate.ts'
 
 export const translate = async (
   text: string,

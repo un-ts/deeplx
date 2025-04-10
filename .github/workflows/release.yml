@@ -41,6 +41,7 @@ jobs:
           commit: 'chore: release deeplx'
           title: 'chore: release deeplx'
           publish: yarn release
+          version: yarn run version
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: true

@@ -5,11 +5,13 @@ import './fetch.js'
 import fs from 'node:fs/promises'
 import { fileURLToPath, URL } from 'node:url'
 
+import {
+  translate,
+  type SourceLanguage,
+  type TargetLanguage,
+} from '@deeplx/core'
 import { cjsRequire } from '@pkgr/core'
 import { program } from 'commander'
-
-import { translate } from './api.js'
-import type { SourceLanguage, TargetLanguage } from './constants.js'
 
 export interface DeepLXCliOptions {
   target: TargetLanguage

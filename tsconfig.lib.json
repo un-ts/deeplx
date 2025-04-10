@@ -1,8 +1,14 @@
 {
   "extends": ".",
-  "compilerOptions": {
-    "rootDir": "src",
-    "outDir": "lib"
-  },
-  "include": ["src"]
+  "references": [
+    {
+      "path": "./packages/@deeplx/core"
+    },
+    {
+      "path": "./packages/@deeplx/cli"
+    },
+    {
+      "path": "./packages/deeplx"
+    }
+  ]
 }
