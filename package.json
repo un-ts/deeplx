@@ -13,7 +13,7 @@
   },
   "bin": "./lib/cli.js",
   "main": "./lib/index.cjs",
-  "types": "./lib/index.d.ts",
+  "types": "./index.d.cts",
   "module": "./lib/index.js",
   "exports": {
     "import": {
