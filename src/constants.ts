@@ -27,6 +27,7 @@ export const SUPPORTED_LANGUAGES = [
   { code: 'SV', language: 'Swedish' },
   { code: 'TR', language: 'Turkish' },
   { code: 'ID', language: 'Indonesian' },
+  { code: 'UK', language: 'Ukrainian' },
 ] as const
 
 export type SupportedLanguage = ValueOf<typeof SUPPORTED_LANGUAGES>

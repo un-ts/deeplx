@@ -3,7 +3,7 @@
 import './fetch.js'
 
 import fs from 'node:fs/promises'
-import { URL } from 'node:url'
+import { fileURLToPath, URL } from 'node:url'
 
 import { cjsRequire } from '@pkgr/core'
 import { program } from 'commander'
@@ -14,9 +14,9 @@ import type { SourceLanguage, TargetLanguage } from './constants.js'
 const { version, description } = cjsRequire<{
   version: string
   description: string
-}>(new URL('../package.json', import.meta.url).pathname)
+}>(fileURLToPath(new URL('../package.json', import.meta.url)))
 
-void program
+program
   .version(version)
   .description(description)
   .option('-sl, --source-language <text>', 'Source language of your text')
@@ -47,3 +47,8 @@ void program
     console.log(translated)
   })
   .parseAsync(process.argv)
+  // eslint-disable-next-line unicorn/prefer-top-level-await
+  .catch((err: unknown) => {
+    process.exitCode = 1
+    console.error(err)
+  })
