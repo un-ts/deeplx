@@ -1,5 +1,11 @@
 # @deeplx/cli
 
+## 0.1.1
+
+### Patch Changes
+
+- [#33](https://github.com/un-ts/deeplx/pull/33) [`39201f0`](https://github.com/un-ts/deeplx/commit/39201f0992aac2a2c2265eafb79cb3e9380475b7) Thanks [@JounQin](https://github.com/JounQin)! - fix: use static consistent cli name
+
 ## 0.1.0
 
 ### Minor Changes

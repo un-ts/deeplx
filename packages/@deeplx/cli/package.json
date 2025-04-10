@@ -1,6 +1,6 @@
 {
   "name": "@deeplx/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "The cli for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core).",
   "repository": "git+https://github.com/un-ts/deeplx.git",
