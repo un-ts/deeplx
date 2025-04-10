@@ -1,95 +1,57 @@
 {
-  "name": "deeplx",
-  "version": "0.2.1",
+  "name": "@unts/deeplx",
+  "version": "0.0.0",
   "type": "module",
   "description": "An unofficial Node package to translate text using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).",
   "repository": "https://github.com/un-ts/deeplx.git",
   "author": "JounQin <admin@1stg.me> (https://www.1stG.me)",
   "funding": "https://opencollective.com/deeplx",
   "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "packages/**"
+  ],
   "packageManager": "yarn@4.9.0",
-  "engines": {
-    "node": "^12.20 || ^14.18.0 || >=16.0.0"
-  },
-  "bin": "./lib/cli.js",
-  "main": "./lib/index.cjs",
-  "types": "./index.d.cts",
-  "module": "./lib/index.js",
-  "exports": {
-    "import": {
-      "types": "./lib/index.d.ts",
-      "default": "./lib/index.js"
-    },
-    "module-sync": {
-      "types": "./lib/index.d.ts",
-      "default": "./lib/index.js"
-    },
-    "require": {
-      "types": "./index.d.cts",
-      "default": "./lib/index.cjs"
-    }
-  },
-  "files": [
-    "index.d.cts",
-    "lib"
-  ],
-  "keywords": [
-    "deepl",
-    "deepl-api",
-    "deepl-free",
-    "deeplx",
-    "deepl-translate",
-    "deepl-translation",
-    "deepl-translator",
-    "translate",
-    "translate-api",
-    "translator"
-  ],
   "scripts": {
     "build": "run-p 'build:*'",
     "build:r": "r -f cjs",
-    "build:tsc": "tsc -p tsconfig.lib.json",
-    "deeplx": "tsx src/cli.ts",
+    "build:tsc": "tsc -b tsconfig.lib.json",
+    "clean": "rimraf --glob .type-coverage coverage '.*cache' 'packages/**/{lib,*.tsbuildinfo}'",
+    "deeplx": "tsx packages/deeplx/src/cli.ts",
     "format": "prettier --write .",
     "lint": "run-p 'lint:*'",
     "lint:es": "eslint . --cache --max-warnings 10",
-    "lint:tsc": "tsc --noEmit",
+    "lint:tsc": "tsc -b --noEmit",
     "prepare": "simple-git-hooks && yarn-berry-deduplicate || exit 0",
-    "release": "yarn build && clean-pkg-json && changeset publish",
+    "release": "yarn build && changeset publish",
     "test": "vitest run",
     "typecov": "type-coverage",
-    "vercel-build": "yarn build && tsx scripts/build"
-  },
-  "dependencies": {
-    "@pkgr/core": "^0.2.2",
-    "commander": "^13.1.0",
-    "node-fetch": "^3.3.2",
-    "tslib": "^2.8.1",
-    "whatlang-node": "^0.1.0",
-    "x-fetch": "^0.2.4"
+    "vercel-build": "yarn build && tsx scripts/build",
+    "version": "changeset version && yarn --immutable"
   },
   "devDependencies": {
     "@1stg/common-config": "^12.0.0",
     "@changesets/changelog-github": "^0.5.1",
     "@changesets/cli": "^2.28.1",
     "@commitlint/cli": "^19.8.0",
+    "@deeplx/core": "workspace:*",
     "@octokit/request": "^9.2.2",
     "@pkgr/rollup": "^6.0.2",
     "@types/web": "^0.0.216",
     "@vercel/node": "^5.1.14",
     "@vitest/coverage-istanbul": "^3.1.1",
-    "clean-pkg-json": "^1.2.1",
-    "deeplx": "link:.",
     "eslint": "^9.24.0",
     "lint-staged": "^15.5.0",
     "npm-run-all2": "^7.0.2",
     "prettier": "^3.5.3",
+    "rimraf": "^6.0.1",
     "simple-git-hooks": "^2.12.1",
     "size-limit": "^11.2.0",
     "size-limit-preset-node-lib": "^0.3.0",
     "tsx": "^4.19.3",
     "type-coverage": "^2.29.7",
     "typescript": "^5.8.3",
+    "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.1.1",
     "yarn-berry-deduplicate": "^6.1.1"
   },

@@ -10,21 +10,21 @@ import {
   type SourceLanguage,
   type SupportedCode,
   type TargetLanguage,
-} from './constants.js'
+} from './constants.ts'
 import type {
   DeepLXTranslationResult,
   Job,
   PostData,
   Translation,
   TranslationResponse,
-} from './types.js'
+} from './types.ts'
 import {
   abbreviateLanguage,
   formatPostString,
   getICount,
   getRandomNumber,
   getTimeStamp,
-} from './utils.js'
+} from './utils.ts'
 
 // makeRequest makes an HTTP request to DeepL API
 const makeRequest = async (

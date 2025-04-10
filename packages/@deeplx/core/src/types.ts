@@ -2,7 +2,7 @@ import type {
   FormalityTone,
   SourceLanguage,
   TargetLanguage,
-} from './constants.js'
+} from './constants.ts'
 
 export type ValueOf<T> =
   T extends ReadonlyArray<infer R> ? R : T extends Set<infer R> ? R : T[keyof T]

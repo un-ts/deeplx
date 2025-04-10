@@ -1,4 +1,4 @@
-import type { ValueOf } from './types.js'
+import type { ValueOf } from './types.ts'
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'BG', language: 'Bulgarian' },

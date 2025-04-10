@@ -1,11 +1,11 @@
-# DeepL Translate
+# @deeplx/core
 
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/un-ts/deeplx/ci.yml?branch=master)](https://github.com/un-ts/deeplx/actions/workflows/ci.yml?query=branch%3Amaster)
 [![Codecov](https://img.shields.io/codecov/c/github/un-ts/deeplx.svg)](https://codecov.io/gh/un-ts/deeplx)
 [![Codacy Grade](https://img.shields.io/codacy/grade/e3d752491a664d889c5bdfb6ffeb6cbb)](https://app.codacy.com/gh/un-ts/deeplx)
 [![type-coverage](https://img.shields.io/badge/dynamic/json.svg?label=type-coverage&prefix=%E2%89%A5&suffix=%&query=$.typeCoverage.atLeast&uri=https%3A%2F%2Fraw.githubusercontent.com%2Frx-ts%2Fdeeplx%2Fmaster%2Fpackage.json)](https://github.com/plantain-00/type-coverage)
 [![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/un-ts/deeplx)](https://coderabbit.ai)
-[![npm](https://img.shields.io/npm/v/deeplx.svg)](https://www.npmjs.com/package/deeplx)
+[![npm](https://img.shields.io/npm/v/@deeplx/core.svg)](https://www.npmjs.com/package/@deeplx/core)
 [![GitHub Release](https://img.shields.io/github/release/un-ts/deeplx)](https://github.com/un-ts/deeplx/releases)
 
 [![Conventional Commits](https://img.shields.io/badge/conventional%20commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
@@ -24,15 +24,13 @@ An unofficial Node package to translate text using [DeepL](https://www.deepl.com
 
 ```sh
 # npm
-npm i deeplx
+npm i @deeplx/core
 
 # pnpm
-pnpm add deeplx
+pnpm add @deeplx/core
 
 # yarn
-yarn add deeplx
-
-# or install `@deeplx/core` for only API usage, or install `@deeplx/cli` for only CLI usage
+yarn add @deeplx/core
 ```
 
 ## Usage
@@ -71,86 +69,12 @@ Currently the following languages are supported:
 
 You can either input the abbreviation or the language written in english.
 
-### Command line tool
-
-#### Help
-
-```sh
-deeplx -h
-```
-
-```console
-Usage: deeplx [options]
-
-An unofficial Node package to translate text using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
-
-Options:
-  -V, --version        output the version number
-  -s, --source <text>  Source language of your text
-  -t, --target <text>  Target language of your desired text
-  --text <text>        Text to be translated
-  -f, --file <path>    File to be translated
-  --formal [boolean]   Whether to use formal (true) or informal (false) tone in translation. Default `undefined` respects source text tone.
-  --no-formal
-  -h, --help           display help for command
-```
-
-#### Example 1
-
-This will translate a Spanish (`ES`) text into Russian (`RU`):
-
-```sh
-deeplx -t russian --text "¡Buenos días!"
-```
-
-```text
-Доброе утро!
-```
-
-#### Example 2
-
-This will translate the file (`test.txt`) text from Italian (`IT`) into Portuguese (`PT`):
-
-```sh
-deeplx -t PT -f test.txt
-```
-
-#### Example 3
-
-This will translate a Spanish (`ES`) text into Russian (`RU`) in _formal_ tone:
-
-```sh
-deeplx -t RU --text "¿Cómo te llamas?" --formal
-```
-
-```text
-Как Вас зовут?
-```
-
-Note: _informal_ would be "_Как **тебя** зовут?_"
-
-#### Example 4
-
-This will translate a Japanese (`JA`) text into German (`DE`) in _informal_ tone:
-
-```sh
-deeplx -t DE --text "お元気ですか？" --no-formal
-```
-
-```text
-Wie geht es dir?
-```
-
-Note: _formal_ would be "_Wie geht es **Ihnen**?_"
-
-### Node library
-
-#### Example 1
+### Example 1
 
 This will translate a Chinese (`ZH`) text into Dutch (`NL`):
 
 ```js
-import { translate } from 'deeplx'
+import { translate } from '@deeplx/core'
 
 await translate('你好', 'NL')
 ```
@@ -159,12 +83,12 @@ await translate('你好', 'NL')
 'Hallo'
 ```
 
-#### Example 2
+### Example 2
 
 This will translate a `danish` text into `german` in informal tone:
 
 ```js
-import { translate } from 'deeplx'
+import { translate } from '@deeplx/core'
 
 await translate('Ring til mig!', 'german', 'danish', false)
 ```

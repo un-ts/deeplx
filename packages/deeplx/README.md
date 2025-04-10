@@ -1,4 +1,4 @@
-# DeepL Translate
+# DeepLX
 
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/un-ts/deeplx/ci.yml?branch=master)](https://github.com/un-ts/deeplx/actions/workflows/ci.yml?query=branch%3Amaster)
 [![Codecov](https://img.shields.io/codecov/c/github/un-ts/deeplx.svg)](https://codecov.io/gh/un-ts/deeplx)
@@ -14,7 +14,7 @@
 [![Code Style: Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
 [![changesets](https://img.shields.io/badge/maintained%20with-changesets-176de3.svg)](https://github.com/atlassian/changesets)
 
-An unofficial Node package to translate text using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
+All in one for `@deeplx/cli` and `@deeplx/core`, a powerful and easy-to-use yet free DeepL API client for Node.js.
 
 ## Online Service
 
@@ -31,8 +31,6 @@ pnpm add deeplx
 
 # yarn
 yarn add deeplx
-
-# or install `@deeplx/core` for only API usage, or install `@deeplx/cli` for only CLI usage
 ```
 
 ## Usage
