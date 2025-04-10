@@ -1,6 +1,6 @@
 {
   "name": "@deeplx/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "An unofficial Node package to translate text using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).",
   "repository": "git+https://github.com/un-ts/deeplx.git",
