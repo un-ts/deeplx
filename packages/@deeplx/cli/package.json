@@ -11,7 +11,9 @@
   "engines": {
     "node": "^12.20 || ^14.18.0 || >=16.0.0"
   },
-  "bin": "./lib/cli.js",
+  "bin": {
+    "deeplx": "./lib/cli.js"
+  },
   "exports": {
     ".": {
       "types": "./lib/cli.d.ts",

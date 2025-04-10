@@ -17,7 +17,7 @@
     "build:r": "r -f cjs",
     "build:tsc": "tsc -b tsconfig.lib.json",
     "clean": "rimraf --glob .type-coverage coverage '.*cache' 'packages/**/{lib,*.tsbuildinfo}'",
-    "deeplx": "tsx packages/deeplx/src/cli.ts",
+    "deeplx": "tsx packages/@deeplx/cli/src/cli.ts",
     "format": "prettier --write .",
     "lint": "run-p 'lint:*'",
     "lint:es": "eslint . --cache --max-warnings 10",

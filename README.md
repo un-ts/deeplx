@@ -82,7 +82,7 @@ deeplx -h
 ```console
 Usage: deeplx [options]
 
-An unofficial Node package to translate text using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
+The cli for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core).
 
 Options:
   -V, --version        output the version number
