@@ -27,7 +27,7 @@
     "test": "vitest run",
     "typecov": "type-coverage",
     "vercel-build": "yarn build && tsx scripts/build",
-    "version": "changeset version && yarn --immutable"
+    "version": "changeset version && yarn --no-immutable"
   },
   "devDependencies": {
     "@1stg/common-config": "^12.0.0",
