@@ -2,7 +2,7 @@
   "name": "deeplx",
   "version": "0.2.0",
   "type": "module",
-  "description": "An unofficial Node package to translate text using [DeepL](https://www.deepl.com).",
+  "description": "An unofficial Node package to translate text using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).",
   "repository": "https://github.com/un-ts/deeplx.git",
   "author": "JounQin <admin@1stg.me> (https://www.1stG.me)",
   "funding": "https://opencollective.com/deeplx",
@@ -49,6 +49,7 @@
     "build": "run-p 'build:*'",
     "build:r": "r -f cjs",
     "build:tsc": "tsc -p tsconfig.lib.json",
+    "deeplx": "tsx src/cli.ts",
     "format": "prettier --write .",
     "lint": "run-p 'lint:*'",
     "lint:es": "eslint . --cache --max-warnings 10",
@@ -60,7 +61,7 @@
     "vercel-build": "yarn build && tsx scripts/build"
   },
   "dependencies": {
-    "@pkgr/core": "^0.2.1",
+    "@pkgr/core": "^0.2.2",
     "commander": "^13.1.0",
     "node-fetch": "^3.3.2",
     "tslib": "^2.8.1",
