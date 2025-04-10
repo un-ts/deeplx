@@ -1,6 +1,6 @@
 {
   "name": "@deeplx/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "description": "The cli for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core).",
   "repository": "git+https://github.com/un-ts/deeplx.git",
@@ -36,7 +36,7 @@
     "translator"
   ],
   "dependencies": {
-    "@deeplx/core": "^0.0.0",
+    "@deeplx/core": "^0.1.0",
     "commander": "^13.1.0",
     "node-fetch": "^3.3.2"
   },

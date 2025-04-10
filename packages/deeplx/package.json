@@ -1,6 +1,6 @@
 {
   "name": "deeplx",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "type": "module",
   "description": "All in one for `@deeplx/cli` and `@deeplx/core`, a powerful and easy-to-use yet free DeepL API client for Node.js.",
   "repository": "git+https://github.com/un-ts/deeplx.git",
@@ -49,8 +49,8 @@
     "translator"
   ],
   "dependencies": {
-    "@deeplx/cli": "^0.0.0",
-    "@deeplx/core": "^0.0.0"
+    "@deeplx/cli": "^0.1.0",
+    "@deeplx/core": "^0.1.0"
   },
   "publishConfig": {
     "access": "public"
