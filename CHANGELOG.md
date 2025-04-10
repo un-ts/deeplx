@@ -1,5 +1,15 @@
 # deeplx
 
+## 0.2.0
+
+### Minor Changes
+
+- [#25](https://github.com/un-ts/deeplx/pull/25) [`65cbb6d`](https://github.com/un-ts/deeplx/commit/65cbb6dd1191da883e7db039bbcce69d09dc2e7a) Thanks [@JounQin](https://github.com/JounQin)! - feat!: rewrite from scratch, port `OwO-Network/DeepLX` instead, migrate to `x-fetch`
+
+### Patch Changes
+
+- [#27](https://github.com/un-ts/deeplx/pull/27) [`6c371da`](https://github.com/un-ts/deeplx/commit/6c371da7cc8d2b4b538eb715d6ce414c2a005f2e) Thanks [@JounQin](https://github.com/JounQin)! - feat: add Ukrainian support
+
 ## 0.1.3
 
 ### Patch Changes
