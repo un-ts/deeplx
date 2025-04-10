@@ -58,5 +58,7 @@ function getAbbreviateLanguages() {
 export function abbreviateLanguage(
   language: string,
 ): SupportedCode | undefined {
-  return getAbbreviateLanguages()[language.toLowerCase() as Lowercase<Language>]
+  return getAbbreviateLanguages()[
+    language.split('-')[0].toLowerCase() as Lowercase<Language>
+  ]
 }
