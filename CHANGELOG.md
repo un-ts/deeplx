@@ -1,5 +1,11 @@
 # deeplx
 
+## 0.2.1
+
+### Patch Changes
+
+- [#29](https://github.com/un-ts/deeplx/pull/29) [`3760d7b`](https://github.com/un-ts/deeplx/commit/3760d7b1211aeb8d7cc00b68e23b462b6d4613ab) Thanks [@JounQin](https://github.com/JounQin)! - feat: change cli options and `formal` signature
+
 ## 0.2.0
 
 ### Minor Changes
