@@ -138,7 +138,7 @@ export const translateByDeepLX = async (
     } catch (error) {
       return {
         code: HTTP_STATUS_SERVICE_UNAVAILABLE,
-        message: error instanceof Error ? error.message : String(error),
+        message: String(error),
       }
     }
 
