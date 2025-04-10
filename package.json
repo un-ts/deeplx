@@ -1,6 +1,6 @@
 {
   "name": "deeplx",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "type": "module",
   "description": "An unofficial Node package to translate text using [DeepL](https://www.deepl.com).",
   "repository": "https://github.com/un-ts/deeplx.git",
