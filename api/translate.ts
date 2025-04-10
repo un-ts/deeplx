@@ -1,23 +1,25 @@
-import { VercelRequest, VercelResponse } from '@vercel/node'
-import type { SourceLanguage, TargetLanguage } from 'deeplx'
+import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-// Workaround for Vercel `Cannot find module 'deeplx'`
-import { abbreviateLanguage, translate } from './_deeplx'
+import {
+  type SourceLanguage,
+  type TargetLanguage,
+  HTTP_STATUS_OK,
+  HTTP_STATUS_INTERNAL_ERROR,
+  abbreviateLanguage,
+  translate,
+  HTTP_STATUS_BAD_REQUEST,
+} from 'deeplx'
 
 export interface RequestParams {
-  text?: string
+  text: string
   source_lang?: SourceLanguage
   target_lang: TargetLanguage
 }
 
-const OK = 200
-const NOT_ALLOWED = 405
-const INTERNAL_ERROR = 500
-
-export default async (
+export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
-): Promise<void> => {
+): Promise<void> {
   // type-coverage:ignore-next-line
   const body = req.body as RequestParams | undefined
 
@@ -34,32 +36,32 @@ https://github.com/un-ts/deeplx`)
 
   const { text, source_lang: sourceLang, target_lang: targetLang } = body
 
+  if (!text) {
+    res.status(HTTP_STATUS_BAD_REQUEST).json({
+      code: HTTP_STATUS_BAD_REQUEST,
+      data: 'Text is required',
+    })
+    return
+  }
+
   if (!abbreviateLanguage(targetLang)) {
-    res.status(NOT_ALLOWED)
-    res.end(
-      JSON.stringify({
-        code: NOT_ALLOWED,
-        data: 'Invalid target language',
-      }),
-    )
+    res.status(HTTP_STATUS_BAD_REQUEST).json({
+      code: HTTP_STATUS_BAD_REQUEST,
+      data: 'Invalid target language',
+    })
     return
   }
 
   try {
     const translation = await translate(text, targetLang, sourceLang)
-    res.end(
-      JSON.stringify({
-        code: OK,
-        data: translation,
-      }),
-    )
+    res.json({
+      code: HTTP_STATUS_OK,
+      data: translation,
+    })
   } catch (err) {
-    res.status(INTERNAL_ERROR)
-    res.end(
-      JSON.stringify({
-        code: INTERNAL_ERROR,
-        data: String(err),
-      }),
-    )
+    res.status(HTTP_STATUS_INTERNAL_ERROR).json({
+      code: HTTP_STATUS_INTERNAL_ERROR,
+      data: err instanceof Error ? err.message : String(err),
+    })
   }
 }

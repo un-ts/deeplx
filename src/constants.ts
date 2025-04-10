@@ -1,6 +1,4 @@
-export const API_URL = 'https://www2.deepl.com/jsonrpc'
-
-export const AUTO = 'auto'
+import type { ValueOf } from './types.js'
 
 export const SUPPORTED_LANGUAGES = [
   { code: 'BG', language: 'Bulgarian' },
@@ -31,9 +29,11 @@ export const SUPPORTED_LANGUAGES = [
   { code: 'ID', language: 'Indonesian' },
 ] as const
 
-export type SupportedLanguage = typeof SUPPORTED_LANGUAGES[number]
+export type SupportedLanguage = ValueOf<typeof SUPPORTED_LANGUAGES>
 
-export type Language = SupportedLanguage['code'] | SupportedLanguage['language']
+export type SupportedCode = SupportedLanguage['code']
+
+export type Language = SupportedCode | SupportedLanguage['language']
 
 export type TargetLanguage =
   | Language
@@ -42,4 +42,34 @@ export type TargetLanguage =
 
 export type SourceLanguage = TargetLanguage | 'auto'
 
-export const SUPPORTED_FORMALITY_TONES = ['formal', 'informal']
+export const FORMALITY_TONES = new Set([
+  'formal',
+  'informal',
+  'undefined',
+] as const)
+
+export type FormalityTone = ValueOf<typeof FORMALITY_TONES>
+
+export const API_URL = 'https://www2.deepl.com/jsonrpc'
+
+export const HTTP_STATUS_OK = 200
+export const HTTP_STATUS_BAD_REQUEST = 400
+export const HTTP_STATUS_NOT_FOUND = 404
+export const HTTP_STATUS_NOT_ALLOWED = 405
+export const HTTP_STATUS_INTERNAL_ERROR = 500
+export const HTTP_STATUS_SERVICE_UNAVAILABLE = 503
+
+export const COMMON_HEADERS: HeadersInit = {
+  'Content-Type': 'application/json',
+  'User-Agent': 'DeepL/1627620 CFNetwork/3826.500.62.2.1 Darwin/24.4.0',
+  Accept: '*/*',
+  'X-App-Os-Name': 'iOS',
+  'X-App-Os-Version': '18.4.0',
+  'Accept-Language': 'en-US,en;q=0.9',
+  'Accept-Encoding': 'gzip, deflate, br', // Keep this!
+  'X-App-Device': 'iPhone16,2',
+  Referer: 'https://www.deepl.com/',
+  'X-Product': 'translator',
+  'X-App-Build': '1627620',
+  'X-App-Version': '25.1',
+}

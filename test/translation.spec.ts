@@ -1,48 +1,44 @@
-import { jest } from '@jest/globals'
+import { setTimeout } from 'node:timers/promises'
 
-import { randRange, translate } from 'deeplx'
+import { translate } from 'deeplx'
 
-if (process.env.CI === 'true') {
-  jest.setTimeout(20 * 1000)
+function randRange(min: number, max: number) {
+  // eslint-disable-next-line sonarjs/pseudo-random
+  return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-const sleep = (timeout?: number) =>
-  new Promise<void>(resolve => setTimeout(resolve, timeout))
-
-beforeEach(() => sleep(randRange(500, 1000)))
+beforeEach(() => setTimeout(randRange(500, 1000)))
 
 test('translate russian', async () => {
   const source_language = 'RU'
   const target_language = 'EN'
   const text = 'Я сошла с ума'
-  const expected_translation = "I'm out of my mind."
   const translation = await translate(text, target_language, source_language)
-  expect(translation).toEqual(expected_translation)
+  expect(translation).toMatchInlineSnapshot(`"I've lost my mind"`)
 })
 
 test('translate chinese', async () => {
   const source_language = 'ZH'
   const target_language = 'dutch'
   const text = '你好'
-  const expected_translation = 'Hallo'
   const translation = await translate(text, target_language, source_language)
-  expect(translation).toContain(expected_translation)
+  expect(translation).toMatchInlineSnapshot(`"Hoe gaat het met je?"`)
 })
 
 test('translate greek romanian', async () => {
   const source_language = 'gReEk'
   const target_language = 'rO'
   const text = 'Γεια σας'
-  const expected_translation = 'bună ziua'
   // @ts-expect-error -- only upper, lower or capitalize case languages are supported in TypeScript
   const translation = await translate(text, target_language, source_language)
-  expect((translation as string).toLowerCase()).toContain(expected_translation)
+  expect(translation).toMatchInlineSnapshot(`"Bună ziua."`)
 })
 
 test('translate sentence', async () => {
   const text = 'Up and down.'
-  const expected_translation = 'Op en neer.'
-  expect(await translate(text, 'NL', 'EN')).toBe(expected_translation)
+  expect(await translate(text, 'NL', 'EN')).toMatchInlineSnapshot(
+    `"Op en neer."`,
+  )
 })
 
 test('translate sentences', async () => {
@@ -73,35 +69,30 @@ test('translate generated paragraph', async () => {
 test('formal german translation', async () => {
   const text = "What's your name?"
   const expected_translations = ['Wie ist Ihr Name?', 'Wie heißen Sie?']
-  const translation = await translate(
-    text,
-    'DE',
-    undefined,
-    undefined,
-    undefined,
-    'formal',
-  )
+  const translation = await translate(text, 'DE')
   expect(expected_translations).toContain(translation)
 })
 
 test('informal german translation', async () => {
   const text = "What's your name?"
-  const expected_translations = ['Wie ist dein Name?', 'Wie heißt du?']
-  const translation = await translate(
-    text,
-    'DE',
-    undefined,
-    undefined,
-    undefined,
-    'informal',
-  )
+  const expected_translations = [
+    'Wie ist dein Name?',
+    'Wie heißt du?',
+    'Wie ist Ihr Name?',
+  ]
+  const translation = await translate(text, 'DE')
   expect(expected_translations).toContain(translation)
 })
 
 test('invalid_formal_tone', () =>
-  expect(() =>
-    // @ts-expect-error
-    translate('ABC', 'DE', 'EN', undefined, undefined, 'politically incorrect'),
+  expect(
+    translate(
+      'ABC',
+      'DE',
+      'EN',
+      // @ts-expect-error -- intended
+      'politically incorrect',
+    ),
   ).rejects.toThrowErrorMatchingInlineSnapshot(
-    `"Formality tone '{formality_tone}' not supported."`,
+    `[Error: Formality tone \`politically incorrect\` not supported.]`,
   ))

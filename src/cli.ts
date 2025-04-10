@@ -1,60 +1,49 @@
 #!/usr/bin/env node
 
+import './fetch.js'
+
 import fs from 'node:fs/promises'
-import path from 'node:path'
 import { URL } from 'node:url'
 
+import { cjsRequire } from '@pkgr/core'
 import { program } from 'commander'
 
 import { translate } from './api.js'
-import { SourceLanguage, TargetLanguage } from './settings.js'
+import type { SourceLanguage, TargetLanguage } from './constants.js'
 
-const __dirname = new URL('.', import.meta.url).pathname
+const { version, description } = cjsRequire<{
+  version: string
+  description: string
+}>(new URL('../package.json', import.meta.url).pathname)
 
-const main = async () => {
-  const pkg = JSON.parse(
-    await fs.readFile(path.resolve(__dirname, '../package.json'), 'utf8'),
-  ) as {
-    version: string
-    description: string
-  }
-  const { sourceLanguage, targetLanguage, text, file, formal } = program
-    .version(pkg.version)
-    .description(pkg.description)
-    .option('-sl, --source-language <text>', 'Source language of your text')
-    .option(
-      '-tl, --target-language <text>',
-      'Target language of your desired text',
-    )
-    .option('--formal [boolean]', 'Use formal or informal tone in translation')
-    .option('-t, --text <text>', 'Text to be translated')
-    .option('-f, --file <path>', 'File to be translated')
-    .parse(process.argv)
-    .opts<{
+void program
+  .version(version)
+  .description(description)
+  .option('-sl, --source-language <text>', 'Source language of your text')
+  .option(
+    '-tl, --target-language <text>',
+    'Target language of your desired text',
+  )
+  .option('-t, --text <text>', 'Text to be translated')
+  .option('-f, --file <path>', 'File to be translated')
+  .action(async function () {
+    const { sourceLanguage, targetLanguage, text, file } = this.opts<{
       targetLanguage: TargetLanguage
       sourceLanguage?: SourceLanguage
       text?: string
       file?: string
-      formal?: boolean
     }>()
 
-  if (text == null && file == null) {
-    throw new Error('One of `text` or `file` option must be specificated')
-  }
+    if (text == null && file == null) {
+      throw new Error('One of `text` or `file` option must be specificated')
+    }
 
-  const translated = await translate(
-    text == null ? await fs.readFile(file!, 'utf8') : text,
-    targetLanguage,
-    sourceLanguage,
-    undefined,
-    undefined,
-    formal == null ? formal : formal ? 'formal' : 'informal',
-  )
+    const translated = await translate(
+      text == null ? await fs.readFile(file!, 'utf8') : text,
+      targetLanguage,
+      sourceLanguage,
+    )
 
-  console.log(translated)
-}
-
-main().catch((err: unknown) => {
-  process.exitCode = 1
-  console.error(err)
-})
+    console.log(translated)
+  })
+  .parseAsync(process.argv)
