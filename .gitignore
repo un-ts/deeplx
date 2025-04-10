@@ -1,7 +1,11 @@
 .*cache
 .type-coverage
 .vercel
+.yarn/*
+!.yarn/plugins
+!.yarn/releases
 coverage
 lib
 node_modules
+/api/_deeplx.js
 /public/index.html

@@ -1,6 +1,0 @@
-coverage
-lib
-CHANGELOG.md
-/api/_deeplx.js
-/public/index.html
-!/.*.cjs
