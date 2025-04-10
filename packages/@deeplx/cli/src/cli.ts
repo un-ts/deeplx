@@ -21,8 +21,7 @@ export interface DeepLXCliOptions {
   formal?: boolean
 }
 
-const { name, version, description } = cjsRequire<{
-  name: string
+const { version, description } = cjsRequire<{
   version: string
   description: string
 }>(fileURLToPath(new URL('../package.json', import.meta.url)))
@@ -30,7 +29,7 @@ const { name, version, description } = cjsRequire<{
 const FALSY_VALUES = new Set(['0', 'false', 'n', 'no', 'off'])
 
 program
-  .name(name)
+  .name('deeplx')
   .version(version)
   .description(description)
   .option('-s, --source <text>', 'Source language of your text')
