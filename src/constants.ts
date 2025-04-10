@@ -34,7 +34,11 @@ export type SupportedLanguage = ValueOf<typeof SUPPORTED_LANGUAGES>
 
 export type SupportedCode = SupportedLanguage['code']
 
-export type Language = SupportedCode | SupportedLanguage['language']
+export type Language =
+  | SupportedCode
+  | SupportedLanguage['language']
+  // language code with variant
+  | `${SupportedCode}-${string}`
 
 export type TargetLanguage =
   | Language

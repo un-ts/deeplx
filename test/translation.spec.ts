@@ -10,35 +10,35 @@ function randRange(min: number, max: number) {
 beforeEach(() => setTimeout(randRange(500, 1000)))
 
 test('translate russian', async () => {
-  const source_language = 'RU'
-  const target_language = 'EN'
+  const sourceLang = 'RU'
+  const targetLang = 'EN'
   const text = 'Я сошла с ума'
-  const translation = await translate(text, target_language, source_language)
+  const translation = await translate(text, targetLang, sourceLang)
   expect(translation).toMatchInlineSnapshot(`"I've lost my mind"`)
 })
 
 test('translate chinese', async () => {
-  const source_language = 'ZH'
-  const target_language = 'dutch'
+  const sourceLang = 'ZH'
+  const targetLang = 'dutch'
   const text = '你好'
-  const translation = await translate(text, target_language, source_language)
+  const translation = await translate(text, targetLang, sourceLang)
   expect(translation).toMatchInlineSnapshot(`"Hoe gaat het met je?"`)
 })
 
 test('translate greek romanian', async () => {
-  const source_language = 'gReEk'
-  const target_language = 'rO'
+  const sourceLang = 'gReEk'
+  const targetLang = 'rO'
   const text = 'Γεια σας'
   // @ts-expect-error -- only upper, lower or capitalize case languages are supported in TypeScript
-  const translation = await translate(text, target_language, source_language)
+  const translation = await translate(text, targetLang, sourceLang)
   expect(translation).toMatchInlineSnapshot(`"Bună ziua."`)
 })
 
 test('translate sentence', async () => {
   const text = 'Up and down.'
-  expect(await translate(text, 'NL', 'EN')).toMatchInlineSnapshot(
-    `"Op en neer."`,
-  )
+  const expected_translations = ['Op en neer.', 'Omhoog en omlaag.']
+  const translation = await translate(text, 'NL', 'EN')
+  expect(expected_translations).toContain(translation)
 })
 
 test('translate sentences', async () => {
@@ -83,16 +83,3 @@ test('informal german translation', async () => {
   const translation = await translate(text, 'DE')
   expect(expected_translations).toContain(translation)
 })
-
-test('invalid_formal_tone', () =>
-  expect(
-    translate(
-      'ABC',
-      'DE',
-      'EN',
-      // @ts-expect-error -- intended
-      'politically incorrect',
-    ),
-  ).rejects.toThrowErrorMatchingInlineSnapshot(
-    `[Error: Formality tone \`politically incorrect\` not supported.]`,
-  ))

@@ -7,7 +7,6 @@ import {
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_OK,
   HTTP_STATUS_SERVICE_UNAVAILABLE,
-  type FormalityTone,
   type SourceLanguage,
   type SupportedCode,
   type TargetLanguage,
@@ -49,7 +48,7 @@ export const translateByDeepLX = async (
   sourceLang: SourceLanguage | undefined,
   targetLang: TargetLanguage,
   text: string,
-  formalityTone?: FormalityTone,
+  formal?: boolean,
   tagHandling = 'plaintext',
   proxyUrl?: string,
   dlSession?: string,
@@ -111,7 +110,9 @@ export const translateByDeepLX = async (
       params: {
         commonJobParams: {
           mode: 'translate',
-          formality: String(formalityTone) as FormalityTone,
+          formality:
+            // eslint-disable-next-line sonarjs/no-nested-conditional
+            formal == null ? 'undefined' : formal ? 'formal' : 'informal',
           transcribe_as: 'romanize',
           advancedMode: false,
           textType: tagHandling,

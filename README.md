@@ -14,7 +14,7 @@
 [![Code Style: Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
 [![changesets](https://img.shields.io/badge/maintained%20with-changesets-176de3.svg)](https://github.com/atlassian/changesets)
 
-An unofficial Node package to translate text using [DeepL](https://www.deepl.com).
+An unofficial Node package to translate text using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
 
 ## Online Service
 
@@ -65,6 +65,7 @@ Currently the following languages are supported:
 | SL           | Slovenian  | Slovenščina             |
 | ES           | Spanish    | Español                 |
 | SV           | Swedish    | Svenska                 |
+| UK           | Ukrainian  | Українська Мова         |
 
 You can either input the abbreviation or the language written in english.
 
@@ -73,22 +74,23 @@ You can either input the abbreviation or the language written in english.
 #### Help
 
 ```sh
-deeplx --help
+deeplx -h
 ```
 
-```log
+```console
 Usage: deeplx [options]
 
-An unofficial Node package to translate text using [DeepL](https://www.deeplx.com).
+An unofficial Node package to translate text using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
 
 Options:
-  -V, --version                  output the version number
-  -sl, --source-language <text>  Source language of your text
-  -tl, --target-language <text>  Target language of your desired text
-  --formal                       Use formal or informal tone in translation (default: false)
-  -t, --text                     Text to be translated
-  -f, --file                     File to be translated
-  -h, --help                     display help for command
+  -V, --version        output the version number
+  -s, --source <text>  Source language of your text
+  -t, --target <text>  Target language of your desired text
+  --text <text>        Text to be translated
+  -f, --file <path>    File to be translated
+  --formal [boolean]   Whether to use formal (true) or informal (false) tone in translation. Default `undefined` respects source text tone.
+  --no-formal
+  -h, --help           display help for command
 ```
 
 #### Example 1
@@ -96,10 +98,10 @@ Options:
 This will translate a Spanish (`ES`) text into Russian (`RU`):
 
 ```sh
-deeplx -tl russian -t "¡Buenos días!"
+deeplx -t russian --text "¡Buenos días!"
 ```
 
-```plain
+```text
 Доброе утро!
 ```
 
@@ -108,7 +110,7 @@ deeplx -tl russian -t "¡Buenos días!"
 This will translate the file (`test.txt`) text from Italian (`IT`) into Portuguese (`PT`):
 
 ```sh
-deeplx -tl PT -f test.txt
+deeplx -t PT -f test.txt
 ```
 
 #### Example 3
@@ -116,10 +118,10 @@ deeplx -tl PT -f test.txt
 This will translate a Spanish (`ES`) text into Russian (`RU`) in _formal_ tone:
 
 ```sh
-deeplx -tl RU --text "¿Cómo te llamas?" --formal
+deeplx -t RU --text "¿Cómo te llamas?" --formal
 ```
 
-```plain
+```text
 Как Вас зовут?
 ```
 
@@ -130,10 +132,10 @@ Note: _informal_ would be "_Как **тебя** зовут?_"
 This will translate a Japanese (`JP`) text into German (`DE`) in _informal_ tone:
 
 ```sh
-deeplx -tl DE --text "お元気ですか？" --formal false
+deeplx -t DE --text "お元気ですか？" --no-formal
 ```
 
-```plain
+```text
 Wie geht es dir?
 ```
 
@@ -148,7 +150,7 @@ This will translate a Chinese (`ZH`) text into Dutch (`NL`):
 ```js
 import { translate } from 'deeplx'
 
-translate('你好', 'NL')
+await translate('你好', 'NL')
 ```
 
 ```log
@@ -162,7 +164,7 @@ This will translate a `danish` text into `german` in informal tone:
 ```js
 import { translate } from 'deeplx'
 
-translate('Ring til mig!', 'german', 'danish', undefined, undefined, false)
+await translate('Ring til mig!', 'german', 'danish', false)
 ```
 
 ```log

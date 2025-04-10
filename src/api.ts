@@ -1,26 +1,13 @@
-import {
-  FORMALITY_TONES,
-  type FormalityTone,
-  type SourceLanguage,
-  type TargetLanguage,
-} from './constants.js'
+import type { SourceLanguage, TargetLanguage } from './constants.js'
 import { translateByDeepLX } from './translate.js'
 
 export const translate = async (
   text: string,
   targetLang: TargetLanguage,
   sourceLang?: SourceLanguage,
-  formalityTone?: FormalityTone,
+  formal?: boolean,
 ) => {
-  if (formalityTone && !FORMALITY_TONES.has(formalityTone)) {
-    throw new Error(`Formality tone \`${formalityTone}\` not supported.`)
-  }
-  const result = await translateByDeepLX(
-    sourceLang,
-    targetLang,
-    text,
-    formalityTone,
-  )
+  const result = await translateByDeepLX(sourceLang, targetLang, text, formal)
   if ('message' in result) {
     throw new Error(result.message, { cause: result })
   }
