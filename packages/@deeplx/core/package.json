@@ -2,7 +2,7 @@
   "name": "@deeplx/core",
   "version": "0.1.0",
   "type": "module",
-  "description": "An unofficial Node package to translate text using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).",
+  "description": "An unofficial but powerful and easy-to-use yet free DeepL API client for Node.js using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).",
   "repository": "git+https://github.com/un-ts/deeplx.git",
   "homepage": "https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core",
   "author": "JounQin <admin@1stg.me> (https://www.1stG.me)",
@@ -50,7 +50,7 @@
   ],
   "dependencies": {
     "whatlang-node": "^0.1.0",
-    "x-fetch": "^0.2.5"
+    "x-fetch": "^0.2.6"
   },
   "publishConfig": {
     "access": "public"

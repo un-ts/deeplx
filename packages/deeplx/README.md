@@ -14,7 +14,28 @@
 [![Code Style: Prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
 [![changesets](https://img.shields.io/badge/maintained%20with-changesets-176de3.svg)](https://github.com/atlassian/changesets)
 
-All in one for `@deeplx/cli` and `@deeplx/core`, a powerful and easy-to-use yet free DeepL API client for Node.js.
+All in one for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core) and [`@deeplx/cli`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/cli), a powerful and easy-to-use yet free DeepL API client for Node.js using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
+
+## TOC <!-- omit in toc -->
+
+- [Online Service](#online-service)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Supported languages](#supported-languages)
+  - [Command line tool](#command-line-tool)
+    - [Help](#help)
+    - [Example 1](#example-1)
+    - [Example 2](#example-2)
+    - [Example 3](#example-3)
+    - [Example 4](#example-4)
+  - [Node library](#node-library)
+    - [Example 1](#example-1-1)
+    - [Example 2](#example-2-1)
+- [Sponsors and Backers](#sponsors-and-backers)
+  - [Sponsors](#sponsors)
+  - [Backers](#backers)
+- [Changelog](#changelog)
+- [License](#license)
 
 ## Online Service
 
@@ -31,6 +52,8 @@ pnpm add deeplx
 
 # yarn
 yarn add deeplx
+
+# or install `@deeplx/core` for only API usage, or install `@deeplx/cli` for only CLI usage
 ```
 
 ## Usage
@@ -171,15 +194,17 @@ await translate('Ring til mig!', 'german', 'danish', false)
 'Ruf mich an!'
 ```
 
-[![Sponsors](https://raw.githubusercontent.com/1stG/static/master/sponsors.svg)](https://github.com/sponsors/JounQin)
+## Sponsors and Backers
 
-## Sponsors
+[![Sponsors and Backers](https://raw.githubusercontent.com/1stG/static/master/sponsors.svg)](https://github.com/sponsors/JounQin)
+
+### Sponsors
 
 | 1stG                                                                                                                   | RxTS                                                                                                                   | UnTS                                                                                                                   |
 | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | [![1stG Open Collective sponsors](https://opencollective.com/1stG/organizations.svg)](https://opencollective.com/1stG) | [![RxTS Open Collective sponsors](https://opencollective.com/rxts/organizations.svg)](https://opencollective.com/rxts) | [![UnTS Open Collective sponsors](https://opencollective.com/unts/organizations.svg)](https://opencollective.com/unts) |
 
-## Backers
+### Backers
 
 | 1stG                                                                                                                | RxTS                                                                                                                | UnTS                                                                                                                |
 | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
