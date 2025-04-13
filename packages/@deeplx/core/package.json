@@ -1,6 +1,6 @@
 {
   "name": "@deeplx/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "An unofficial but powerful and easy-to-use yet free DeepL API client for Node.js using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).",
   "repository": "git+https://github.com/un-ts/deeplx.git",
