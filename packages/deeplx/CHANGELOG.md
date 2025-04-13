@@ -1,5 +1,15 @@
 # deeplx
 
+## 0.3.1
+
+### Patch Changes
+
+- [#35](https://github.com/un-ts/deeplx/pull/35) [`7818273`](https://github.com/un-ts/deeplx/commit/781827308f0487f26b5162d8fec9148b96f1b876) Thanks [@JounQin](https://github.com/JounQin)! - docs: improve accessibility with `TOC`
+
+- Updated dependencies [[`7818273`](https://github.com/un-ts/deeplx/commit/781827308f0487f26b5162d8fec9148b96f1b876)]:
+  - @deeplx/cli@0.1.2
+  - @deeplx/core@0.1.1
+
 ## 0.3.0
 
 ### Minor Changes
