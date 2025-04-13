@@ -1,5 +1,11 @@
 # @deeplx/core
 
+## 0.1.2
+
+### Patch Changes
+
+- [`f3493cc`](https://github.com/un-ts/deeplx/commit/f3493cc7224c5cb0e6f3eec1d15ef7ffb3c9241a) Thanks [@JounQin](https://github.com/JounQin)! - fix: remove invalid `bin` field for `@deeplx/core`
+
 ## 0.1.1
 
 ### Patch Changes
