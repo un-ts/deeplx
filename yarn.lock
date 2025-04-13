@@ -2348,8 +2348,6 @@ __metadata:
   dependencies:
     whatlang-node: "npm:^0.1.0"
     x-fetch: "npm:^0.2.6"
-  bin:
-    core: ./lib/cli.js
   languageName: unknown
   linkType: soft
 
