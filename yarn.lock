@@ -2921,7 +2921,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@markuplint/parser-utils@npm:4.8.6, @markuplint/parser-utils@npm:^4.8.6":
+"@markuplint/parser-utils@npm:4.8.6":
   version: 4.8.6
   resolution: "@markuplint/parser-utils@npm:4.8.6"
   dependencies:
@@ -2937,7 +2937,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@markuplint/parser-utils@npm:4.8.7":
+"@markuplint/parser-utils@npm:^4.8.6, @markuplint/parser-utils@npm:4.8.7":
   version: 4.8.7
   resolution: "@markuplint/parser-utils@npm:4.8.7"
   dependencies:
