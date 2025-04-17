@@ -28,18 +28,18 @@
     "version": "changeset version && yarn --no-immutable"
   },
   "devDependencies": {
-    "@1stg/common-config": "^13.0.0",
+    "@1stg/common-config": "^13.0.1",
     "@changesets/changelog-github": "^0.5.1",
-    "@changesets/cli": "^2.28.1",
+    "@changesets/cli": "^2.29.2",
     "@commitlint/cli": "^19.8.0",
     "@deeplx/core": "workspace:*",
     "@octokit/request": "^9.2.3",
-    "@pkgr/rollup": "^6.0.2",
+    "@pkgr/rollup": "^6.0.3",
     "@types/web": "^0.0.219",
     "@vercel/node": "^5.1.14",
     "@vitest/coverage-istanbul": "^3.1.1",
     "eslint": "^9.24.0",
-    "lint-staged": "^15.5.1",
+    "nano-staged": "^0.8.0",
     "npm-run-all2": "^7.0.2",
     "prettier": "^3.5.3",
     "rimraf": "^6.0.1",
@@ -54,7 +54,6 @@
     "yarn-berry-deduplicate": "^6.1.1"
   },
   "resolutions": {
-    "es5-ext": "npm:@unes/es5-ext@latest",
     "prettier": "^3.5.3"
   },
   "typeCoverage": {
