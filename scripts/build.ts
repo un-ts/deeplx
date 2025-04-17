@@ -2,9 +2,7 @@ import fs from 'node:fs/promises'
 
 import { request } from '@octokit/request'
 
-/**
- * @link https://github.com/sindresorhus/github-markdown-css
- */
+/** @link https://github.com/sindresorhus/github-markdown-css */
 const { data } = await request('POST /markdown', {
   text: await fs.readFile('README.md', 'utf8'),
   token: process.env.GITHUB_TOKEN,
