@@ -1,5 +1,6 @@
+import { createProxy } from 'node-fetch-native/proxy'
 import { detectLang } from 'whatlang-node'
-import { fetchApi } from 'x-fetch'
+import { xfetch } from 'x-fetch'
 
 import {
   API_URL,
@@ -29,15 +30,16 @@ import {
 // makeRequest makes an HTTP request to DeepL API
 const makeRequest = async (
   postData: PostData,
-  _proxyUrl?: string, // unsupported yet
+  proxyUrl?: string,
   dlSession?: string,
 ) => {
-  return fetchApi<TranslationResponse>(API_URL, {
+  return xfetch<TranslationResponse>(API_URL, {
     method: 'POST',
     body: formatPostString(postData),
     headers: dlSession
       ? { ...COMMON_HEADERS, Cookie: `dl_session=${dlSession}` }
       : COMMON_HEADERS,
+    ...createProxy({ url: proxyUrl }),
   })
 }
 
