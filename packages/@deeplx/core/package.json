@@ -48,6 +48,7 @@
     "translator"
   ],
   "dependencies": {
+    "node-fetch-native": "^1.6.6",
     "whatlang-node": "^0.1.0",
     "x-fetch": "^0.2.6"
   },

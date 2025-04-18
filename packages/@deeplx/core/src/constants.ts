@@ -1,3 +1,5 @@
+import type { HeadersInit } from 'undici'
+
 import type { ValueOf } from './types.ts'
 
 export const SUPPORTED_LANGUAGES = [
@@ -64,7 +66,7 @@ export const HTTP_STATUS_NOT_ALLOWED = 405
 export const HTTP_STATUS_INTERNAL_ERROR = 500
 export const HTTP_STATUS_SERVICE_UNAVAILABLE = 503
 
-export const COMMON_HEADERS: HeadersInit = {
+export const COMMON_HEADERS = {
   'Content-Type': 'application/json',
   'User-Agent': 'DeepL/1627620 CFNetwork/3826.500.62.2.1 Darwin/24.4.0',
   Accept: '*/*',
@@ -77,4 +79,4 @@ export const COMMON_HEADERS: HeadersInit = {
   'X-Product': 'translator',
   'X-App-Build': '1627620',
   'X-App-Version': '25.1',
-}
+} as const satisfies HeadersInit
