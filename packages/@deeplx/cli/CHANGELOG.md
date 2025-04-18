@@ -1,5 +1,14 @@
 # @deeplx/cli
 
+## 0.1.3
+
+### Patch Changes
+
+- [#40](https://github.com/un-ts/deeplx/pull/40) [`65855bf`](https://github.com/un-ts/deeplx/commit/65855bfc65eebce31efb823064495f386c3d87cb) Thanks [@JounQin](https://github.com/JounQin)! - feat: add `proxy` support with `node-fetch-native/proxy`
+
+- Updated dependencies [[`65855bf`](https://github.com/un-ts/deeplx/commit/65855bfc65eebce31efb823064495f386c3d87cb)]:
+  - @deeplx/core@0.1.3
+
 ## 0.1.2
 
 ### Patch Changes
