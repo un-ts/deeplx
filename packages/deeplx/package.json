@@ -1,6 +1,6 @@
 {
   "name": "deeplx",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "type": "module",
   "description": "All in one for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core) and [`@deeplx/cli`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/cli), a powerful and easy-to-use yet free DeepL API client for Node.js using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).",
   "repository": "git+https://github.com/un-ts/deeplx.git",
@@ -49,8 +49,8 @@
     "translator"
   ],
   "dependencies": {
-    "@deeplx/cli": "^0.1.2",
-    "@deeplx/core": "^0.1.1"
+    "@deeplx/cli": "^0.1.3",
+    "@deeplx/core": "^0.1.3"
   },
   "publishConfig": {
     "access": "public"

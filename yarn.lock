@@ -2194,11 +2194,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@deeplx/cli@npm:^0.1.2, @deeplx/cli@workspace:packages/@deeplx/cli":
+"@deeplx/cli@npm:^0.1.3, @deeplx/cli@workspace:packages/@deeplx/cli":
   version: 0.0.0-use.local
   resolution: "@deeplx/cli@workspace:packages/@deeplx/cli"
   dependencies:
-    "@deeplx/core": "npm:^0.1.1"
+    "@deeplx/core": "npm:^0.1.3"
     commander: "npm:^13.1.0"
     node-fetch-native: "npm:^1.6.6"
   bin:
@@ -2206,7 +2206,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@deeplx/core@npm:^0.1.1, @deeplx/core@workspace:*, @deeplx/core@workspace:packages/@deeplx/core":
+"@deeplx/core@npm:^0.1.3, @deeplx/core@workspace:*, @deeplx/core@workspace:packages/@deeplx/core":
   version: 0.0.0-use.local
   resolution: "@deeplx/core@workspace:packages/@deeplx/core"
   dependencies:
@@ -5920,8 +5920,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "deeplx@workspace:packages/deeplx"
   dependencies:
-    "@deeplx/cli": "npm:^0.1.2"
-    "@deeplx/core": "npm:^0.1.1"
+    "@deeplx/cli": "npm:^0.1.3"
+    "@deeplx/core": "npm:^0.1.3"
   bin:
     deeplx: ./lib/cli.js
   languageName: unknown
