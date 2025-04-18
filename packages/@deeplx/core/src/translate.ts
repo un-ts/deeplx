@@ -30,7 +30,7 @@ import {
 // makeRequest makes an HTTP request to DeepL API
 const makeRequest = async (
   postData: PostData,
-  proxyUrl?: string, // unsupported yet
+  proxyUrl?: string,
   dlSession?: string,
 ) => {
   return xfetch<TranslationResponse>(API_URL, {
