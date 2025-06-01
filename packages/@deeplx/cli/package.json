@@ -39,7 +39,7 @@
   ],
   "dependencies": {
     "@deeplx/core": "^0.1.3",
-    "commander": "^13.1.0",
+    "commander": "^14.0.0",
     "node-fetch-native": "^1.6.6"
   },
   "publishConfig": {
