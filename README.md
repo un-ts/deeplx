@@ -196,7 +196,7 @@ Detailed changes for each release are documented in [CHANGELOG.md](./CHANGELOG.m
 This will translate a text using a proxy and a DeepL Pro session cookie:
 
 ```js
-import { translate } from '@deeplx/core'
+import { translate } from 'deeplx'
 
 await translate('Hello World', 'ZH', 'EN', {
   proxyUrl: 'http://127.0.0.1:7890',
