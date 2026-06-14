@@ -1,223 +1,272 @@
+import { randomUUID } from 'node:crypto'
+
 import { createProxy } from 'node-fetch-native/proxy'
-import { detectLang } from 'whatlang-node'
 import { xfetch } from 'x-fetch'
 
 import {
-  API_URL,
-  COMMON_HEADERS,
+  ONESHOT_FREE_ENDPOINT,
+  ONESHOT_PRO_ENDPOINT,
+  CHROME_EXTENSION_ID,
+  CHROME_EXTENSION_VERSION,
+  IMPERSONATED_CHROME_MAJOR,
+  MAX_FREE_TEXT_LENGTH,
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_OK,
   HTTP_STATUS_SERVICE_UNAVAILABLE,
+  HTTP_STATUS_BAD_REQUEST,
+  HTTP_STATUS_TOO_MANY_REQUESTS,
+  TARGET_LANG_MAP,
+  SOURCE_LANG_MAP,
   type SourceLanguage,
-  type SupportedCode,
   type TargetLanguage,
 } from './constants.ts'
 import type {
   DeepLXTranslationResult,
-  Job,
-  PostData,
-  Translation,
-  TranslationResponse,
+  OneshotRequest,
+  OneshotResponse,
 } from './types.ts'
-import {
-  abbreviateLanguage,
-  formatPostString,
-  getICount,
-  getRandomNumber,
-  getTimeStamp,
-} from './utils.ts'
+import { abbreviateLanguage } from './utils.ts'
 
-// makeRequest makes an HTTP request to DeepL API
-const makeRequest = async (
-  postData: PostData,
-  proxyUrl?: string,
-  dlSession?: string,
-) => {
-  return xfetch<TranslationResponse>(API_URL, {
-    method: 'POST',
-    body: formatPostString(postData),
-    headers: dlSession
-      ? { ...COMMON_HEADERS, Cookie: `dl_session=${dlSession}` }
-      : COMMON_HEADERS,
-    ...createProxy({ url: proxyUrl }),
-  })
+const instanceID = randomUUID()
+
+let sharedCookies = ''
+let warmupPromise: Promise<void> | null = null
+
+async function warmCookies(proxyUrl?: string) {
+  if (warmupPromise) {
+    return warmupPromise
+  }
+  warmupPromise = (async () => {
+    try {
+      const res = await xfetch('https://www.deepl.com/translator', {
+        type: null,
+        ...createProxy({ url: proxyUrl }),
+      })
+      const setCookie = res.headers.get('set-cookie')
+      if (setCookie) {
+        const cookies: string[] = []
+        const userCountryMatch = /userCountry=[^;]+/.exec(setCookie)
+        if (userCountryMatch) {
+          cookies.push(userCountryMatch[0])
+        }
+        const verifiedBotMatch = /verifiedBot=[^;]+/.exec(setCookie)
+        if (verifiedBotMatch) {
+          cookies.push(verifiedBotMatch[0])
+        }
+        if (cookies.length > 0) {
+          sharedCookies = cookies.join('; ')
+        }
+      }
+    } catch {
+      // ignore warmup errors
+    }
+  })()
+  return warmupPromise
 }
 
-const splitAndProcess = (text: string): string[] =>
-  text.split('\n').map(line => (line.trim() === '' ? '\n' : line))
+function resolveTargetLang(code: string): string {
+  if (!code || code.toLowerCase() === 'auto') {
+    throw new Error('target_lang cannot be "auto" or empty')
+  }
+  const upperCode = code.toUpperCase()
+  let mapped = TARGET_LANG_MAP[upperCode]
+  if (!mapped) {
+    const abbreviated = abbreviateLanguage(code)
+    if (abbreviated) {
+      mapped = TARGET_LANG_MAP[abbreviated.toUpperCase()]
+    }
+  }
+  if (!mapped) {
+    throw new Error(`unsupported target_lang "${code}"`)
+  }
+  return mapped
+}
+
+function resolveSourceLang(code: string | undefined): string | undefined {
+  if (!code || code.toLowerCase() === 'auto') {
+    return undefined
+  }
+  const upperCode = code.toUpperCase()
+  let mapped = SOURCE_LANG_MAP[upperCode]
+  if (!mapped) {
+    const abbreviated = abbreviateLanguage(code)
+    if (abbreviated) {
+      mapped = SOURCE_LANG_MAP[abbreviated.toUpperCase()]
+    }
+  }
+  if (!mapped) {
+    throw new Error(`unsupported source_lang "${code}"`)
+  }
+  return mapped
+}
+
+function parseTranslationError(
+  error: unknown,
+  reqId: number,
+): DeepLXTranslationResult {
+  let status = HTTP_STATUS_SERVICE_UNAVAILABLE
+  if (error && typeof error === 'object') {
+    const e = error as Record<string, unknown>
+    if (typeof e.status === 'number') {
+      status = e.status
+    } else if (e.response && typeof e.response === 'object') {
+      const res = e.response as Record<string, unknown>
+      if (typeof res.status === 'number') {
+        status = res.status
+      }
+    }
+  }
+
+  if (status === HTTP_STATUS_TOO_MANY_REQUESTS) {
+    return {
+      code: HTTP_STATUS_TOO_MANY_REQUESTS,
+      id: reqId,
+      message:
+        "too many requests, your IP has been blocked by DeepL temporarily, please don't request it frequently in a short time",
+    }
+  }
+  return {
+    code: status,
+    id: reqId,
+    message: String(error),
+  }
+}
+
+function buildHeaders(dlSession?: string): Record<string, string> {
+  const authValue = dlSession ? `Bearer ${dlSession}` : 'None'
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: '*/*',
+    Authorization: authValue,
+    Origin: `chrome-extension://${CHROME_EXTENSION_ID}`,
+    'Sec-Fetch-Site': 'cross-site',
+    'Sec-Fetch-Mode': 'cors',
+    'Sec-Fetch-Dest': 'empty',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'User-Agent': `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${IMPERSONATED_CHROME_MAJOR}.0.0.0 Safari/537.36`,
+  }
+  if (sharedCookies) {
+    headers['Cookie'] = sharedCookies
+  }
+  return headers
+}
+
+function processTranslationResponse(
+  response: OneshotResponse | null,
+  reqId: number,
+  sourceLang: SourceLanguage | undefined,
+  targetLang: TargetLanguage,
+  dlSession?: string,
+): DeepLXTranslationResult {
+  if (!response?.translations || response.translations.length === 0) {
+    return {
+      code: HTTP_STATUS_SERVICE_UNAVAILABLE,
+      id: reqId,
+      message: 'Translation failed',
+    }
+  }
+
+  const mainTranslation = response.translations[0]
+  if (!mainTranslation.text) {
+    return {
+      code: HTTP_STATUS_SERVICE_UNAVAILABLE,
+      id: reqId,
+      message: 'Translation failed',
+    }
+  }
+
+  const detectedLang = mainTranslation.detected_source_language
+    ? (mainTranslation.detected_source_language.toUpperCase() as SourceLanguage)
+    : sourceLang || 'auto'
+
+  return {
+    code: HTTP_STATUS_OK,
+    id: reqId,
+    data: mainTranslation.text,
+    alternatives: [],
+    sourceLang: detectedLang,
+    targetLang,
+    method: dlSession ? 'Pro' : 'Free',
+  }
+}
 
 export const translateByDeepLX = async (
   sourceLang: SourceLanguage | undefined,
   targetLang: TargetLanguage,
   text: string,
-  formal?: boolean,
-  tagHandling = 'plaintext',
   proxyUrl?: string,
   dlSession?: string,
-  // eslint-disable-next-line sonarjs/cognitive-complexity
 ): Promise<DeepLXTranslationResult> => {
   if (!text) {
     return { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' }
   }
 
-  // Split text by newlines and store them for later reconstruction
-  const textParts = splitAndProcess(text)
-  const translatedParts: string[] = []
-  const allAlternatives: string[][] = [] // Store alternatives for each part
-
-  for (const part of textParts) {
-    if (!part.trim()) {
-      translatedParts.push('')
-      allAlternatives.push([''])
-      continue
+  if ([...text].length > MAX_FREE_TEXT_LENGTH) {
+    return {
+      code: 413, // Payload Too Large
+      message: `text exceeds maximum length: ${[...text].length} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
     }
+  }
 
-    // Get detected language if source language is auto
-    if (!sourceLang || sourceLang === 'auto') {
-      sourceLang = detectLang(part, true) as SourceLanguage
+  if (!dlSession) {
+    await warmCookies(proxyUrl)
+  }
+
+  let resolvedTarget: string
+  try {
+    resolvedTarget = resolveTargetLang(targetLang)
+  } catch (err: unknown) {
+    return {
+      code: HTTP_STATUS_BAD_REQUEST,
+      message: err instanceof Error ? err.message : String(err),
     }
+  }
 
-    const sourceLangCode =
-      abbreviateLanguage(sourceLang) ??
-      (sourceLang.toUpperCase() as SupportedCode)
+  let resolvedSource: string | undefined
+  try {
+    resolvedSource = resolveSourceLang(sourceLang)
+  } catch (err: unknown) {
+    return {
+      code: HTTP_STATUS_BAD_REQUEST,
+      message: err instanceof Error ? err.message : String(err),
+    }
+  }
 
-    // Prepare jobs from split result
-    const jobs: Job[] = [
+  const reqData: OneshotRequest = {
+    text: [text],
+    target_lang: resolvedTarget,
+    source_lang: resolvedSource,
+    usage_type: 'Translate',
+    app_information: {
+      os: 'brex_macOS',
+      os_version: `brex_chrome_${IMPERSONATED_CHROME_MAJOR}.0.0.0`,
+      app_version: CHROME_EXTENSION_VERSION,
+      app_build: 'chrome_web_store',
+      instance_id: instanceID,
+    },
+  }
+
+  const reqId = Date.now()
+
+  try {
+    const response = await xfetch<OneshotResponse | null>(
+      dlSession ? ONESHOT_PRO_ENDPOINT : ONESHOT_FREE_ENDPOINT,
       {
-        kind: 'default',
-        preferred_num_beams: 4,
-        raw_en_context_before: [],
-        raw_en_context_after: [],
-        sentences: [{ prefix: '', text: part, id: 0 }],
+        method: 'POST',
+        body: JSON.stringify(reqData),
+        headers: buildHeaders(dlSession),
+        ...createProxy({ url: proxyUrl }),
       },
-    ]
+    )
 
-    let hasRegionalVariant = false
-    let targetLangCode =
-      abbreviateLanguage(targetLang) ??
-      (targetLang.toUpperCase() as SupportedCode)
-    const targetLangParts = targetLang.split('-')
-    if (targetLangParts.length > 1) {
-      targetLangCode = targetLangParts[0] as SupportedCode
-      hasRegionalVariant = true
-    }
-
-    // Prepare translation request
-    const id = getRandomNumber()
-
-    const postData: PostData = {
-      jsonrpc: '2.0',
-      method: 'LMT_handle_jobs',
-      id,
-      params: {
-        commonJobParams: {
-          mode: 'translate',
-          formality:
-            // eslint-disable-next-line sonarjs/no-nested-conditional
-            formal == null ? 'undefined' : formal ? 'formal' : 'informal',
-          transcribe_as: 'romanize',
-          advancedMode: false,
-          textType: tagHandling,
-          wasSpoken: false,
-          ...(hasRegionalVariant && { regionalVariant: targetLang }),
-        },
-        lang: {
-          source_lang_user_selected: 'auto',
-          target_lang: targetLangCode,
-          source_lang_computed: sourceLangCode,
-        },
-        jobs,
-        timestamp: getTimeStamp(getICount(part)),
-      },
-    }
-
-    let translations: Translation[]
-
-    try {
-      // Make translation request
-      const { result } = await makeRequest(postData, proxyUrl, dlSession)
-      translations = result.translations
-    } catch (error) {
-      return {
-        code: HTTP_STATUS_SERVICE_UNAVAILABLE,
-        message: String(error),
-      }
-    }
-
-    // Process translation results
-    let partTranslation = ''
-    const partAlternatives: string[] = []
-
-    if (translations.length > 0) {
-      // Process main translation
-      for (const translation of translations) {
-        partTranslation += translation.beams[0].sentences[0].text + ' '
-      }
-      partTranslation = partTranslation.trim()
-
-      // Process alternatives
-      const numBeams = translations[0].beams.length
-      for (let i = 1; i < numBeams; i++) {
-        // Start from 1 since 0 is the main translation
-        let altText = ''
-        for (const translation of translations) {
-          const beams = translation.beams
-          if (i < beams.length) {
-            altText += beams[i].sentences[0].text + ' '
-          }
-        }
-        if (altText) {
-          partAlternatives.push(altText.trim())
-        }
-      }
-    }
-
-    if (!partTranslation) {
-      return {
-        code: HTTP_STATUS_SERVICE_UNAVAILABLE,
-        message: 'Translation failed',
-      }
-    }
-
-    translatedParts.push(partTranslation)
-    allAlternatives.push(partAlternatives)
-  }
-
-  // Join all translated parts with newlines
-  const translatedText = translatedParts.join('\n')
-
-  // Combine alternatives with proper newline handling
-  const combinedAlternatives: string[] = []
-
-  let maxAlts = 0
-  for (const alts of allAlternatives) {
-    if (alts.length > maxAlts) {
-      maxAlts = alts.length
-    }
-  }
-
-  // Create combined alternatives preserving line structure
-  for (let i = 0; i < maxAlts; i++) {
-    const altParts: string[] = []
-    for (const [j, alts] of allAlternatives.entries()) {
-      if (i < alts.length) {
-        altParts.push(alts[i])
-      } else if (translatedParts[j].length === 0) {
-        altParts.push('') // Keep empty lines
-      } else {
-        altParts.push(translatedParts[j]) // Use main translation if no alternative
-      }
-    }
-    combinedAlternatives.push(altParts.join('\n'))
-  }
-
-  return {
-    code: HTTP_STATUS_OK,
-    id: getRandomNumber(), // Using new ID for the complete translation
-    data: translatedText,
-    alternatives: combinedAlternatives,
-    sourceLang: sourceLang!,
-    targetLang,
-    method: dlSession ? 'Pro' : 'Free',
+    return processTranslationResponse(
+      response,
+      reqId,
+      sourceLang,
+      targetLang,
+      dlSession,
+    )
+  } catch (error: unknown) {
+    return parseTranslationError(error, reqId)
   }
 }

@@ -5,9 +5,8 @@ export const translate = async (
   text: string,
   targetLang: TargetLanguage,
   sourceLang?: SourceLanguage,
-  formal?: boolean,
 ) => {
-  const result = await translateByDeepLX(sourceLang, targetLang, text, formal)
+  const result = await translateByDeepLX(sourceLang, targetLang, text)
   if ('message' in result) {
     throw new Error(result.message, { cause: result })
   }
