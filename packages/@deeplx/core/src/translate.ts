@@ -33,7 +33,7 @@ let sharedCookies = ''
 let warmupPromise: Promise<void> | null = null
 
 async function warmCookies(proxyUrl?: string) {
-  if (warmupPromise) {
+  if (warmupPromise !== null) {
     return warmupPromise
   }
   warmupPromise = (async () => {
