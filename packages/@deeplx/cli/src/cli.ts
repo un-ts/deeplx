@@ -18,6 +18,8 @@ export interface DeepLXCliOptions {
   source?: SourceLanguage
   text?: string
   file?: string
+  dlSession?: string
+  proxy?: string
 }
 
 const { version, description } = cjsRequire<{
@@ -33,8 +35,11 @@ program
   .requiredOption('-t, --target <text>', 'Target language of your desired text')
   .option('--text <text>', 'Text to be translated')
   .option('-f, --file <path>', 'File to be translated')
+  .option('--dl-session <cookie>', 'DeepL Pro session cookie (dl_session)')
+  .option('--proxy <url>', 'Proxy URL for the request')
   .action(async function () {
-    const { source, target, text, file } = this.opts<DeepLXCliOptions>()
+    const { source, target, text, file, dlSession, proxy } =
+      this.opts<DeepLXCliOptions>()
 
     const isTextNil = text == null || text.trim() === ''
     const isFileNil = file == null || file.trim() === ''
@@ -53,6 +58,10 @@ program
       isTextNil ? await fs.readFile(file!, 'utf8') : text,
       target,
       source,
+      {
+        dlSession,
+        proxyUrl: proxy,
+      },
     )
 
     console.log(translated)

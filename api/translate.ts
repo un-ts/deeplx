@@ -14,6 +14,8 @@ export interface RequestParams {
   text: string
   source_lang?: SourceLanguage
   target_lang: TargetLanguage
+  dl_session?: string
+  proxy_url?: string
 }
 
 export default async function handler(
@@ -34,7 +36,13 @@ https://github.com/un-ts/deeplx`)
 
   res.setHeader('Content-Type', 'application/json')
 
-  const { text, source_lang: sourceLang, target_lang: targetLang } = body
+  const {
+    text,
+    source_lang: sourceLang,
+    target_lang: targetLang,
+    dl_session,
+    proxy_url,
+  } = body
 
   if (!text) {
     res.status(HTTP_STATUS_BAD_REQUEST).json({
@@ -53,7 +61,10 @@ https://github.com/un-ts/deeplx`)
   }
 
   try {
-    const translation = await translate(text, targetLang, sourceLang)
+    const translation = await translate(text, targetLang, sourceLang, {
+      dlSession: dl_session,
+      proxyUrl: proxy_url,
+    })
     res.json({
       code: HTTP_STATUS_OK,
       data: translation,

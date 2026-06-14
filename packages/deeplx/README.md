@@ -29,6 +29,7 @@ All in one for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/pack
   - [Node library](#node-library)
     - [Example 1](#example-1-1)
     - [Example 2](#example-2-1)
+    - [Example 3](#example-3)
 - [Sponsors and Backers](#sponsors-and-backers)
   - [Sponsors](#sponsors)
   - [Backers](#backers)
@@ -101,15 +102,21 @@ deeplx -h
 ```console
 Usage: deeplx [options]
 
-An unofficial Node package to translate text using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
+The cli for
+[\`@deeplx/core\`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core),
+a powerful and easy-to-use yet free DeepL API client for Node.js using
+[DeepL](https://www.deepl.com) by porting
+[OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
 
 Options:
-  -V, --version        output the version number
-  -s, --source <text>  Source language of your text
-  -t, --target <text>  Target language of your desired text
-  --text <text>        Text to be translated
-  -f, --file <path>    File to be translated
-  -h, --help           display help for command
+  -V, --version          output the version number
+  -s, --source <text>    Source language of your text
+  -t, --target <text>    Target language of your desired text
+  --text <text>          Text to be translated
+  -f, --file <path>      File to be translated
+  --dl-session <cookie>  DeepL Pro session cookie (dl_session)
+  --proxy <url>          Proxy URL for the request
+  -h, --help             display help for command
 ```
 
 #### Example 1
@@ -189,3 +196,20 @@ Detailed changes for each release are documented in [CHANGELOG.md](./CHANGELOG.m
 [1stG.me]: https://www.1stG.me
 [JounQin]: https://github.com/JounQin
 [MIT]: http://opensource.org/licenses/MIT
+
+### Example 3
+
+This will translate a text using a proxy and a DeepL Pro session cookie:
+
+```js
+import { translate } from '@deeplx/core'
+
+await translate('Hello World', 'ZH', 'EN', {
+  proxyUrl: 'http://127.0.0.1:7890',
+  dlSession: 'your_dl_session_cookie',
+})
+```
+
+```log
+'你好，世界'
+```
