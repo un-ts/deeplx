@@ -105,6 +105,7 @@ function parseTranslationError(
   reqId: number,
 ): DeepLXTranslationResult {
   let status = HTTP_STATUS_SERVICE_UNAVAILABLE
+  let message: string | undefined
   if (error && typeof error === 'object') {
     const e = error as Record<string, unknown>
     if (typeof e.status === 'number') {
@@ -114,6 +115,9 @@ function parseTranslationError(
       if (typeof res.status === 'number') {
         status = res.status
       }
+    }
+    if (typeof e.message === 'string') {
+      message = e.message
     }
   }
 
@@ -128,7 +132,7 @@ function parseTranslationError(
   return {
     code: status,
     id: reqId,
-    message: String(error),
+    message: message ?? String(error),
   }
 }
 
