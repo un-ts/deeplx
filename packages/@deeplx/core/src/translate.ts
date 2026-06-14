@@ -58,6 +58,7 @@ async function warmCookies(proxyUrl?: string) {
         }
       }
     } catch {
+      warmupPromise = null
       // ignore warmup errors
     }
   })()
