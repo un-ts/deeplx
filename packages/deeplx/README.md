@@ -26,8 +26,6 @@ All in one for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/pack
     - [Help](#help)
     - [Example 1](#example-1)
     - [Example 2](#example-2)
-    - [Example 3](#example-3)
-    - [Example 4](#example-4)
   - [Node library](#node-library)
     - [Example 1](#example-1-1)
     - [Example 2](#example-2-1)
@@ -111,8 +109,6 @@ Options:
   -t, --target <text>  Target language of your desired text
   --text <text>        Text to be translated
   -f, --file <path>    File to be translated
-  --formal [boolean]   Whether to use formal (true) or informal (false) tone in translation. Default `undefined` respects source text tone.
-  --no-formal
   -h, --help           display help for command
 ```
 
@@ -136,34 +132,6 @@ This will translate the file (`test.txt`) text from Italian (`IT`) into Portugue
 deeplx -t PT -f test.txt
 ```
 
-#### Example 3
-
-This will translate a Spanish (`ES`) text into Russian (`RU`) in _formal_ tone:
-
-```sh
-deeplx -t RU --text "¿Cómo te llamas?" --formal
-```
-
-```text
-Как Вас зовут?
-```
-
-Note: _informal_ would be "_Как **тебя** зовут?_"
-
-#### Example 4
-
-This will translate a Japanese (`JA`) text into German (`DE`) in _informal_ tone:
-
-```sh
-deeplx -t DE --text "お元気ですか？" --no-formal
-```
-
-```text
-Wie geht es dir?
-```
-
-Note: _formal_ would be "_Wie geht es **Ihnen**?_"
-
 ### Node library
 
 #### Example 1
@@ -182,12 +150,12 @@ await translate('你好', 'NL')
 
 #### Example 2
 
-This will translate a `danish` text into `german` in informal tone:
+This will translate a `danish` text into `german`:
 
 ```js
 import { translate } from 'deeplx'
 
-await translate('Ring til mig!', 'german', 'danish', false)
+await translate('Ring til mig!', 'german', 'danish')
 ```
 
 ```log

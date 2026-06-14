@@ -18,15 +18,12 @@ export interface DeepLXCliOptions {
   source?: SourceLanguage
   text?: string
   file?: string
-  formal?: boolean
 }
 
 const { version, description } = cjsRequire<{
   version: string
   description: string
 }>(fileURLToPath(new URL('../package.json', import.meta.url)))
-
-const FALSY_VALUES = new Set(['0', 'false', 'n', 'no', 'off'])
 
 program
   .name('deeplx')
@@ -36,14 +33,8 @@ program
   .requiredOption('-t, --target <text>', 'Target language of your desired text')
   .option('--text <text>', 'Text to be translated')
   .option('-f, --file <path>', 'File to be translated')
-  .option(
-    '--formal [boolean]',
-    'Whether to use formal (true) or informal (false) tone in translation. Default `undefined` respects source text tone.',
-    (formal?: string) => (formal == null ? formal : !FALSY_VALUES.has(formal)),
-  )
-  .option('--no-formal')
   .action(async function () {
-    const { source, target, text, file, formal } = this.opts<DeepLXCliOptions>()
+    const { source, target, text, file } = this.opts<DeepLXCliOptions>()
 
     const isTextNil = text == null || text.trim() === ''
     const isFileNil = file == null || file.trim() === ''
@@ -62,7 +53,6 @@ program
       isTextNil ? await fs.readFile(file!, 'utf8') : text,
       target,
       source,
-      formal,
     )
 
     console.log(translated)

@@ -99,12 +99,12 @@ await translate('你好', 'NL')
 
 ### Example 2
 
-This will translate a `danish` text into `german` in informal tone:
+This will translate a `danish` text into `german`:
 
 ```js
 import { translate } from '@deeplx/core'
 
-await translate('Ring til mig!', 'german', 'danish', false)
+await translate('Ring til mig!', 'german', 'danish')
 ```
 
 ```log
