@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
 import { createProxy } from 'node-fetch-native/proxy'
-import { xfetch } from 'x-fetch'
+import { ResponseError, xfetch } from 'x-fetch'
 
 import {
   ONESHOT_FREE_ENDPOINT,
@@ -100,61 +100,15 @@ function resolveLang(
   return { success: true, value: mapped }
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function safeStringify(value: unknown): string {
-  if (typeof value === 'string') {
-    return value
-  }
-
-  if (value instanceof Error) {
-    return value.message
-  }
-
-  try {
-    return JSON.stringify(value)
-  } catch {
-    return String(value)
-  }
-}
-function parseTranslationError(
-  error: unknown,
-  reqId: number,
-): DeepLXTranslationResult {
-  let status = HTTP_STATUS_SERVICE_UNAVAILABLE
-  let message: string | undefined
-
-  if (isRecord(error)) {
-    if (typeof error.status === 'number') {
-      status = error.status
-    } else if (
-      isRecord(error.response) &&
-      typeof error.response.status === 'number'
-    ) {
-      status = error.response.status
+function parseTranslationError(error: unknown, reqId: number): DeepLXTranslationResult {
+  if (error instanceof ResponseError) {
+    const status = error.response.status
+    if (status === HTTP_STATUS_TOO_MANY_REQUESTS) {
+      return { code: status, id: reqId, message: 'too many requests, ...' }
     }
-
-    if (typeof error.message === 'string') {
-      message = error.message
-    }
+    return { code: status, id: reqId, message: error.message }
   }
-
-  if (status === HTTP_STATUS_TOO_MANY_REQUESTS) {
-    return {
-      code: HTTP_STATUS_TOO_MANY_REQUESTS,
-      id: reqId,
-      message:
-        "too many requests, your IP has been blocked by DeepL temporarily, please don't request it frequently in a short time",
-    }
-  }
-
-  return {
-    code: status,
-    id: reqId,
-    message: message ?? safeStringify(error),
-  }
+  return { code: HTTP_STATUS_SERVICE_UNAVAILABLE, id: reqId, message: String(error) }
 }
 
 function buildHeaders(dlSession?: string): Record<string, string> {
