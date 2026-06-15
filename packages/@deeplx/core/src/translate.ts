@@ -14,6 +14,7 @@ import {
   HTTP_STATUS_OK,
   HTTP_STATUS_SERVICE_UNAVAILABLE,
   HTTP_STATUS_BAD_REQUEST,
+  HTTP_STATUS_PAYLOAD_TOO_LARGE,
   HTTP_STATUS_TOO_MANY_REQUESTS,
   TARGET_LANG_MAP,
   SOURCE_LANG_MAP,
@@ -227,7 +228,7 @@ export const translateByDeepLX = async (
 
   if ([...text].length > MAX_FREE_TEXT_LENGTH) {
     return {
-      code: 413, // Payload Too Large
+      code: HTTP_STATUS_PAYLOAD_TOO_LARGE, // Payload Too Large
       message: `text exceeds maximum length: ${[...text].length} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
     }
   }
