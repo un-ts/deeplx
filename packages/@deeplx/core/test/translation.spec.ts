@@ -14,7 +14,7 @@ test('translate russian', async () => {
   const targetLang = 'EN'
   const text = 'Я сошла с ума'
   const translation = await translate(text, targetLang, sourceLang)
-  expect(translation).toMatchInlineSnapshot(`"Hoe gaat het met je?"`)
+  expect(translation).toMatchInlineSnapshot(`"I've lost my mind"`)
 })
 
 test('translate chinese', async () => {
@@ -31,7 +31,7 @@ test('translate greek romanian', async () => {
   const text = 'Γεια σας'
   // @ts-expect-error -- only upper, lower or capitalize case languages are supported in TypeScript
   const translation = await translate(text, targetLang, sourceLang)
-  expect(translation).toMatchInlineSnapshot(`"Bună ziua."`)
+  expect(translation).toMatchInlineSnapshot(`"Bună ziua"`)
 })
 
 test('translate sentence', async () => {
