@@ -65,40 +65,38 @@ async function warmCookies(proxyUrl?: string) {
   return warmupPromise
 }
 
-function resolveTargetLang(code: string): string {
-  if (!code || code.toLowerCase() === 'auto') {
-    throw new Error('target_lang cannot be "auto" or empty')
-  }
-  const upperCode = code.toUpperCase()
-  let mapped = TARGET_LANG_MAP[upperCode]
-  if (!mapped) {
-    const abbreviated = abbreviateLanguage(code)
-    if (abbreviated) {
-      mapped = TARGET_LANG_MAP[abbreviated.toUpperCase()]
-    }
-  }
-  if (!mapped) {
-    throw new Error(`unsupported target_lang "${code}"`)
-  }
-  return mapped
-}
+type ResolveResult<T> =
+  | { success: false; error: string }
+  | { success: true; value: T }
 
-function resolveSourceLang(code: string | undefined): string | undefined {
+function resolveLang(code: string, kind: 'target'): ResolveResult<string>
+function resolveLang(
+  code: string | undefined,
+  kind: 'source',
+): ResolveResult<string | undefined>
+function resolveLang(
+  code: string | undefined,
+  kind: 'source' | 'target',
+): ResolveResult<string | undefined> {
   if (!code || code.toLowerCase() === 'auto') {
-    return undefined
+    if (kind === 'target') {
+      return { success: false, error: 'target_lang cannot be "auto" or empty' }
+    }
+    return { success: true, value: undefined }
   }
+  const langMap = kind === 'target' ? TARGET_LANG_MAP : SOURCE_LANG_MAP
   const upperCode = code.toUpperCase()
-  let mapped = SOURCE_LANG_MAP[upperCode]
+  let mapped = langMap[upperCode]
   if (!mapped) {
     const abbreviated = abbreviateLanguage(code)
     if (abbreviated) {
-      mapped = SOURCE_LANG_MAP[abbreviated.toUpperCase()]
+      mapped = langMap[abbreviated.toUpperCase()]
     }
   }
   if (!mapped) {
-    throw new Error(`unsupported source_lang "${code}"`)
+    return { success: false, error: `unsupported ${kind}_lang "${code}"` }
   }
-  return mapped
+  return { success: true, value: mapped }
 }
 
 function parseTranslationError(
@@ -217,30 +215,20 @@ export const translateByDeepLX = async (
     await warmCookies(proxyUrl)
   }
 
-  let resolvedTarget: string
-  try {
-    resolvedTarget = resolveTargetLang(targetLang)
-  } catch (err: unknown) {
-    return {
-      code: HTTP_STATUS_BAD_REQUEST,
-      message: err instanceof Error ? err.message : String(err),
-    }
+  const targetResult = resolveLang(targetLang, 'target')
+  if (!targetResult.success) {
+    return { code: HTTP_STATUS_BAD_REQUEST, message: targetResult.error }
   }
 
-  let resolvedSource: string | undefined
-  try {
-    resolvedSource = resolveSourceLang(sourceLang)
-  } catch (err: unknown) {
-    return {
-      code: HTTP_STATUS_BAD_REQUEST,
-      message: err instanceof Error ? err.message : String(err),
-    }
+  const sourceResult = resolveLang(sourceLang, 'source')
+  if (!sourceResult.success) {
+    return { code: HTTP_STATUS_BAD_REQUEST, message: sourceResult.error }
   }
 
   const reqData: OneshotRequest = {
     text: [text],
-    target_lang: resolvedTarget,
-    source_lang: resolvedSource,
+    target_lang: targetResult.value,
+    source_lang: sourceResult.value,
     usage_type: 'Translate',
     app_information: {
       os: 'brex_macOS',
