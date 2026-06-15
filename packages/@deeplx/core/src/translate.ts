@@ -99,24 +99,44 @@ function resolveLang(
   return { success: true, value: mapped }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function safeStringify(value: unknown): string {
+  if (typeof value === 'string') {
+    return value
+  }
+
+  if (value instanceof Error) {
+    return value.message
+  }
+
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
+}
 function parseTranslationError(
   error: unknown,
   reqId: number,
 ): DeepLXTranslationResult {
   let status = HTTP_STATUS_SERVICE_UNAVAILABLE
   let message: string | undefined
-  if (error && typeof error === 'object') {
-    const e = error as Record<string, unknown>
-    if (typeof e.status === 'number') {
-      status = e.status
-    } else if (e.response && typeof e.response === 'object') {
-      const res = e.response as Record<string, unknown>
-      if (typeof res.status === 'number') {
-        status = res.status
-      }
+
+  if (isRecord(error)) {
+    if (typeof error.status === 'number') {
+      status = error.status
+    } else if (
+      isRecord(error.response) &&
+      typeof error.response.status === 'number'
+    ) {
+      status = error.response.status
     }
-    if (typeof e.message === 'string') {
-      message = e.message
+
+    if (typeof error.message === 'string') {
+      message = error.message
     }
   }
 
@@ -128,10 +148,11 @@ function parseTranslationError(
         "too many requests, your IP has been blocked by DeepL temporarily, please don't request it frequently in a short time",
     }
   }
+
   return {
     code: status,
     id: reqId,
-    message: message ?? String(error),
+    message: message ?? safeStringify(error),
   }
 }
 
