@@ -14,7 +14,7 @@ test('translate russian', async () => {
   const targetLang = 'EN'
   const text = 'Я сошла с ума'
   const translation = await translate(text, targetLang, sourceLang)
-  expect(translation).toMatchInlineSnapshot(`"I've lost my mind"`)
+  expect(translation).toMatchInlineSnapshot(`"I've gone crazy"`)
 })
 
 test('translate chinese', async () => {
