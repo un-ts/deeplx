@@ -4,6 +4,7 @@
     "paths": {
       "deeplx": ["./packages/deeplx/src/index.ts"],
       "@deeplx/core": ["./packages/@deeplx/core/src/index.ts"]
-    }
+    },
+    "types": ["node", "vitest"]
   }
 }

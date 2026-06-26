@@ -72,7 +72,7 @@ program
     console.log(translated)
   })
   .parseAsync(process.argv)
-  // eslint-disable-next-line unicorn/prefer-top-level-await
+  // eslint-disable-next-line unicorn-x/prefer-top-level-await
   .catch((err: unknown) => {
     process.exitCode = 1
     console.error(err)
