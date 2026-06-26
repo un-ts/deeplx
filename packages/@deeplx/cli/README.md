@@ -25,8 +25,6 @@ The cli for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/package
   - [Help](#help)
   - [Example 1](#example-1)
   - [Example 2](#example-2)
-  - [Example 3](#example-3)
-  - [Example 4](#example-4)
 - [Sponsors and Backers](#sponsors-and-backers)
   - [Sponsors](#sponsors)
   - [Backers](#backers)
@@ -95,18 +93,24 @@ deeplx -h
 ```console
 Usage: deeplx [options]
 
-The cli for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core).
+The cli for
+[\`@deeplx/core\`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core),
+a powerful and easy-to-use yet free DeepL API client for Node.js using
+[DeepL](https://www.deepl.com) by porting
+[OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
 
 Options:
-  -V, --version        output the version number
-  -s, --source <text>  Source language of your text
-  -t, --target <text>  Target language of your desired text
-  --text <text>        Text to be translated
-  -f, --file <path>    File to be translated
-  --formal [boolean]   Whether to use formal (true) or informal (false) tone in translation. Default `undefined` respects source text tone.
-  --no-formal
-  -h, --help           display help for command
+  -V, --version          output the version number
+  -s, --source <text>    Source language of your text
+  -t, --target <text>    Target language of your desired text
+  --text <text>          Text to be translated
+  -f, --file <path>      File to be translated
+  --dl-session <cookie>  DeepL Pro session cookie (dl_session) (env: DL_SESSION)
+  --proxy <url>          Proxy URL for the request
+  -h, --help             display help for command
 ```
+
+The `--dl-session` option also reads from the `DL_SESSION` environment variable as a fallback, which is useful for avoiding credentials in shell history.
 
 ### Example 1
 
@@ -127,34 +131,6 @@ This will translate the file (`test.txt`) text from Italian (`IT`) into Portugue
 ```sh
 deeplx -t PT -f test.txt
 ```
-
-### Example 3
-
-This will translate a Spanish (`ES`) text into Russian (`RU`) in _formal_ tone:
-
-```sh
-deeplx -t RU --text "¿Cómo te llamas?" --formal
-```
-
-```text
-Как Вас зовут?
-```
-
-Note: _informal_ would be "_Как **тебя** зовут?_"
-
-### Example 4
-
-This will translate a Japanese (`JA`) text into German (`DE`) in _informal_ tone:
-
-```sh
-deeplx -t DE --text "お元気ですか？" --no-formal
-```
-
-```text
-Wie geht es dir?
-```
-
-Note: _formal_ would be "_Wie geht es **Ihnen**?_"
 
 ## Sponsors and Backers
 

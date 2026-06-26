@@ -24,6 +24,7 @@ An unofficial but powerful and easy-to-use yet free DeepL API client for Node.js
   - [Supported languages](#supported-languages)
   - [Example 1](#example-1)
   - [Example 2](#example-2)
+  - [Example 3](#example-3)
 - [Sponsors and Backers](#sponsors-and-backers)
   - [Sponsors](#sponsors)
   - [Backers](#backers)
@@ -99,16 +100,33 @@ await translate('你好', 'NL')
 
 ### Example 2
 
-This will translate a `danish` text into `german` in informal tone:
+This will translate a `danish` text into `german`:
 
 ```js
 import { translate } from '@deeplx/core'
 
-await translate('Ring til mig!', 'german', 'danish', false)
+await translate('Ring til mig!', 'german', 'danish')
 ```
 
 ```log
 'Ruf mich an!'
+```
+
+### Example 3
+
+This will translate a text using a proxy and a DeepL Pro session cookie:
+
+```js
+import { translate } from '@deeplx/core'
+
+await translate('Hello World', 'ZH', 'EN', {
+  proxyUrl: 'http://127.0.0.1:7890',
+  dlSession: 'your_dl_session_cookie',
+})
+```
+
+```log
+'你好，世界'
 ```
 
 ## Sponsors and Backers

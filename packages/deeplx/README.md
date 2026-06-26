@@ -26,11 +26,10 @@ All in one for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/pack
     - [Help](#help)
     - [Example 1](#example-1)
     - [Example 2](#example-2)
-    - [Example 3](#example-3)
-    - [Example 4](#example-4)
   - [Node library](#node-library)
     - [Example 1](#example-1-1)
     - [Example 2](#example-2-1)
+    - [Example 3](#example-3)
 - [Sponsors and Backers](#sponsors-and-backers)
   - [Sponsors](#sponsors)
   - [Backers](#backers)
@@ -103,17 +102,21 @@ deeplx -h
 ```console
 Usage: deeplx [options]
 
-An unofficial Node package to translate text using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
+The cli for
+[\`@deeplx/core\`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core),
+a powerful and easy-to-use yet free DeepL API client for Node.js using
+[DeepL](https://www.deepl.com) by porting
+[OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
 
 Options:
-  -V, --version        output the version number
-  -s, --source <text>  Source language of your text
-  -t, --target <text>  Target language of your desired text
-  --text <text>        Text to be translated
-  -f, --file <path>    File to be translated
-  --formal [boolean]   Whether to use formal (true) or informal (false) tone in translation. Default `undefined` respects source text tone.
-  --no-formal
-  -h, --help           display help for command
+  -V, --version          output the version number
+  -s, --source <text>    Source language of your text
+  -t, --target <text>    Target language of your desired text
+  --text <text>          Text to be translated
+  -f, --file <path>      File to be translated
+  --dl-session <cookie>  DeepL Pro session cookie (dl_session)
+  --proxy <url>          Proxy URL for the request
+  -h, --help             display help for command
 ```
 
 #### Example 1
@@ -136,34 +139,6 @@ This will translate the file (`test.txt`) text from Italian (`IT`) into Portugue
 deeplx -t PT -f test.txt
 ```
 
-#### Example 3
-
-This will translate a Spanish (`ES`) text into Russian (`RU`) in _formal_ tone:
-
-```sh
-deeplx -t RU --text "¿Cómo te llamas?" --formal
-```
-
-```text
-Как Вас зовут?
-```
-
-Note: _informal_ would be "_Как **тебя** зовут?_"
-
-#### Example 4
-
-This will translate a Japanese (`JA`) text into German (`DE`) in _informal_ tone:
-
-```sh
-deeplx -t DE --text "お元気ですか？" --no-formal
-```
-
-```text
-Wie geht es dir?
-```
-
-Note: _formal_ would be "_Wie geht es **Ihnen**?_"
-
 ### Node library
 
 #### Example 1
@@ -182,16 +157,33 @@ await translate('你好', 'NL')
 
 #### Example 2
 
-This will translate a `danish` text into `german` in informal tone:
+This will translate a `danish` text into `german`:
 
 ```js
 import { translate } from 'deeplx'
 
-await translate('Ring til mig!', 'german', 'danish', false)
+await translate('Ring til mig!', 'german', 'danish')
 ```
 
 ```log
 'Ruf mich an!'
+```
+
+### Example 3
+
+This will translate a text using a proxy and a DeepL Pro session cookie:
+
+```js
+import { translate } from 'deeplx'
+
+await translate('Hello World', 'ZH', 'EN', {
+  proxyUrl: 'http://127.0.0.1:7890',
+  dlSession: 'your_dl_session_cookie',
+})
+```
+
+```log
+'你好，世界'
 ```
 
 ## Sponsors and Backers

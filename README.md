@@ -41,33 +41,47 @@ yarn add deeplx
 
 Currently the following languages are supported:
 
-| Abbreviation | Language   | Writing in own language |
-| ------------ | ---------- | ----------------------- |
-| BG           | Bulgarian  | Български               |
-| ZH           | Chinese    | 中文                    |
-| CS           | Czech      | Česky                   |
-| DA           | Danish     | Dansk                   |
-| NL           | Dutch      | Nederlands              |
-| EN           | English    | English                 |
-| ET           | Estonian   | Eesti                   |
-| FI           | Finnish    | Suomi                   |
-| FR           | French     | Français                |
-| DE           | German     | Deutsch                 |
-| EL           | Greek      | Ελληνικά                |
-| HU           | Hungarian  | Magyar                  |
-| IT           | Italian    | Italiano                |
-| JA           | Japanese   | 日本語                  |
-| LV           | Latvian    | Latviešu                |
-| LT           | Lithuanian | Lietuvių                |
-| PL           | Polish     | Polski                  |
-| PT           | Portuguese | Português               |
-| RO           | Romanian   | Română                  |
-| RU           | Russian    | Русский                 |
-| SK           | Slovak     | Slovenčina              |
-| SL           | Slovenian  | Slovenščina             |
-| ES           | Spanish    | Español                 |
-| SV           | Swedish    | Svenska                 |
-| UK           | Ukrainian  | Українська Мова         |
+| Abbreviation | Language                 | Writing in own language |
+| ------------ | ------------------------ | ----------------------- |
+| AR           | Arabic                   | العربية                 |
+| BG           | Bulgarian                | Български               |
+| CS           | Czech                    | Česky                   |
+| DA           | Danish                   | Dansk                   |
+| DE           | German                   | Deutsch                 |
+| EL           | Greek                    | Ελληνικά                |
+| EN           | English                  | English                 |
+| EN-GB        | English (British)        | English (British)       |
+| EN-US        | English (American)       | English (American)      |
+| ES           | Spanish                  | Español                 |
+| ES-419       | Spanish (Latin American) | Español (Latinoamérica) |
+| ET           | Estonian                 | Eesti                   |
+| FI           | Finnish                  | Suomi                   |
+| FR           | French                   | Français                |
+| HE           | Hebrew                   | עברית                   |
+| HU           | Hungarian                | Magyar                  |
+| ID           | Indonesian               | Bahasa Indonesia        |
+| IT           | Italian                  | Italiano                |
+| JA           | Japanese                 | 日本語                  |
+| KO           | Korean                   | 한국어                  |
+| LT           | Lithuanian               | Lietuvių                |
+| LV           | Latvian                  | Latviešu                |
+| NB           | Norwegian Bokmål         | Norsk bokmål            |
+| NL           | Dutch                    | Nederlands              |
+| PL           | Polish                   | Polski                  |
+| PT           | Portuguese               | Português               |
+| PT-BR        | Portuguese (Brazilian)   | Português (Brasil)      |
+| PT-PT        | Portuguese (European)    | Português (Portugal)    |
+| RO           | Romanian                 | Română                  |
+| RU           | Russian                  | Русский                 |
+| SK           | Slovak                   | Slovenčina              |
+| SL           | Slovenian                | Slovenščina             |
+| SV           | Swedish                  | Svenska                 |
+| TR           | Turkish                  | Türkçe                  |
+| UK           | Ukrainian                | Українська Мова         |
+| VI           | Vietnamese               | Tiếng Việt              |
+| ZH           | Chinese                  | 中文                    |
+| ZH-HANS      | Chinese (Simplified)     | 简体中文                |
+| ZH-HANT      | Chinese (Traditional)    | 繁体中文                |
 
 You can either input the abbreviation or the language written in english.
 
@@ -82,17 +96,21 @@ deeplx -h
 ```console
 Usage: deeplx [options]
 
-The cli for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core).
+The cli for
+[\`@deeplx/core\`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core),
+a powerful and easy-to-use yet free DeepL API client for Node.js using
+[DeepL](https://www.deepl.com) by porting
+[OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).
 
 Options:
-  -V, --version        output the version number
-  -s, --source <text>  Source language of your text
-  -t, --target <text>  Target language of your desired text
-  --text <text>        Text to be translated
-  -f, --file <path>    File to be translated
-  --formal [boolean]   Whether to use formal (true) or informal (false) tone in translation. Default `undefined` respects source text tone.
-  --no-formal
-  -h, --help           display help for command
+  -V, --version          output the version number
+  -s, --source <text>    Source language of your text
+  -t, --target <text>    Target language of your desired text
+  --text <text>          Text to be translated
+  -f, --file <path>      File to be translated
+  --dl-session <cookie>  DeepL Pro session cookie (dl_session)
+  --proxy <url>          Proxy URL for the request
+  -h, --help             display help for command
 ```
 
 #### Example 1
@@ -115,34 +133,6 @@ This will translate the file (`test.txt`) text from Italian (`IT`) into Portugue
 deeplx -t PT -f test.txt
 ```
 
-#### Example 3
-
-This will translate a Spanish (`ES`) text into Russian (`RU`) in _formal_ tone:
-
-```sh
-deeplx -t RU --text "¿Cómo te llamas?" --formal
-```
-
-```text
-Как Вас зовут?
-```
-
-Note: _informal_ would be "_Как **тебя** зовут?_"
-
-#### Example 4
-
-This will translate a Japanese (`JA`) text into German (`DE`) in _informal_ tone:
-
-```sh
-deeplx -t DE --text "お元気ですか？" --no-formal
-```
-
-```text
-Wie geht es dir?
-```
-
-Note: _formal_ would be "_Wie geht es **Ihnen**?_"
-
 ### Node library
 
 #### Example 1
@@ -161,16 +151,33 @@ await translate('你好', 'NL')
 
 #### Example 2
 
-This will translate a `danish` text into `german` in informal tone:
+This will translate a `danish` text into `german`:
 
 ```js
 import { translate } from 'deeplx'
 
-await translate('Ring til mig!', 'german', 'danish', false)
+await translate('Ring til mig!', 'german', 'danish')
 ```
 
 ```log
 'Ruf mich an!'
+```
+
+### Example 3
+
+This will translate a text using a proxy and a DeepL Pro session cookie:
+
+```js
+import { translate } from 'deeplx'
+
+await translate('Hello World', 'ZH', 'EN', {
+  proxyUrl: 'http://127.0.0.1:7890',
+  dlSession: 'your_dl_session_cookie',
+})
+```
+
+```log
+'你好，世界'
 ```
 
 ## Sponsors and Backers

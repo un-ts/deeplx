@@ -1,13 +1,24 @@
 import type { SourceLanguage, TargetLanguage } from './constants.ts'
 import { translateByDeepLX } from './translate.ts'
 
+export interface TranslateOptions {
+  dlSession?: string
+  proxyUrl?: string
+}
+
 export const translate = async (
   text: string,
   targetLang: TargetLanguage,
   sourceLang?: SourceLanguage,
-  formal?: boolean,
+  options?: TranslateOptions,
 ) => {
-  const result = await translateByDeepLX(sourceLang, targetLang, text, formal)
+  const result = await translateByDeepLX(
+    sourceLang,
+    targetLang,
+    text,
+    options?.proxyUrl,
+    options?.dlSession,
+  )
   if ('message' in result) {
     throw new Error(result.message, { cause: result })
   }
