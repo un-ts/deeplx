@@ -28,7 +28,11 @@ import type {
 } from './types.ts'
 import { abbreviateLanguage } from './utils.ts'
 
-const instanceID = randomUUID()
+let instanceID_: string | undefined
+function getInstanceID(): string {
+  // eslint-disable-next-line sonarjs/no-nested-assignment
+  return (instanceID_ ??= randomUUID())
+}
 
 let sharedCookies = ''
 let warmupPromise: Promise<void> | null = null
@@ -218,7 +222,7 @@ export const translateByDeepLX = async (
       os_version: `brex_chrome_${IMPERSONATED_CHROME_MAJOR}.0.0.0`,
       app_version: CHROME_EXTENSION_VERSION,
       app_build: 'chrome_web_store',
-      instance_id: instanceID,
+      instance_id: getInstanceID(),
     },
   }
 
