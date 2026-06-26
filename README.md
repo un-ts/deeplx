@@ -18,7 +18,7 @@ An unofficial but powerful and easy-to-use yet free DeepL API client for Node.js
 
 ## Online Service
 
-<https://deeplx.vercel.app/translate>
+<https://deeplx.1stg.me/translate>
 
 ## Installation
 

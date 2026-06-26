@@ -33,7 +33,7 @@ The cli for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/package
 
 ## Online Service
 
-<https://deeplx.vercel.app/translate>
+<https://deeplx.1stg.me/translate>
 
 ## Installation
 
