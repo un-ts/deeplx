@@ -98,6 +98,7 @@ export default {
         text,
         proxyUrl,
         dlSession,
+        req.signal,
       )
 
       return json(result, result.code)

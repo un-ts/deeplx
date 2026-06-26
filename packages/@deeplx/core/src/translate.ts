@@ -37,7 +37,7 @@ function getInstanceID(): string {
 let sharedCookies = ''
 let warmupPromise: Promise<void> | null = null
 
-async function warmCookies(proxyUrl?: string) {
+async function warmCookies(proxyUrl?: string, signal?: AbortSignal) {
   if (warmupPromise !== null) {
     return warmupPromise
   }
@@ -45,6 +45,7 @@ async function warmCookies(proxyUrl?: string) {
     try {
       const res = await xfetch('https://www.deepl.com/translator', {
         type: null,
+        signal,
         ...createProxy({ url: proxyUrl }),
       })
       const setCookie = res.headers.get('set-cookie')
@@ -186,6 +187,7 @@ export const translateByDeepLX = async (
   text: string,
   proxyUrl?: string,
   dlSession?: string,
+  signal?: AbortSignal,
 ): Promise<DeepLXTranslationResult> => {
   if (!text) {
     return { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' }
@@ -199,7 +201,7 @@ export const translateByDeepLX = async (
   }
 
   if (!dlSession) {
-    await warmCookies(proxyUrl)
+    await warmCookies(proxyUrl, signal)
   }
 
   const targetResult = resolveLang(targetLang, 'target')
@@ -235,6 +237,7 @@ export const translateByDeepLX = async (
         method: 'POST',
         body: reqData,
         headers: buildHeaders(dlSession),
+        signal,
         ...createProxy({ url: proxyUrl }),
       },
     )
