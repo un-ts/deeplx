@@ -229,7 +229,7 @@ export const translateByDeepLX = async (
       dlSession ? ONESHOT_PRO_ENDPOINT : ONESHOT_FREE_ENDPOINT,
       {
         method: 'POST',
-        body: JSON.stringify(reqData),
+        body: reqData,
         headers: buildHeaders(dlSession),
         ...createProxy({ url: proxyUrl }),
       },
