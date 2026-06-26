@@ -100,7 +100,10 @@ function resolveLang(
   return { success: true, value: mapped }
 }
 
-function parseTranslationError(error: unknown, reqId: number): DeepLXTranslationResult {
+function parseTranslationError(
+  error: unknown,
+  reqId: number,
+): DeepLXTranslationResult {
   if (error instanceof ResponseError) {
     const status = error.response.status
     if (status === HTTP_STATUS_TOO_MANY_REQUESTS) {
@@ -108,7 +111,11 @@ function parseTranslationError(error: unknown, reqId: number): DeepLXTranslation
     }
     return { code: status, id: reqId, message: error.message }
   }
-  return { code: HTTP_STATUS_SERVICE_UNAVAILABLE, id: reqId, message: String(error) }
+  return {
+    code: HTTP_STATUS_SERVICE_UNAVAILABLE,
+    id: reqId,
+    message: String(error),
+  }
 }
 
 function buildHeaders(dlSession?: string): Record<string, string> {
