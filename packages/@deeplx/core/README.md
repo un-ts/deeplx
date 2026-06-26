@@ -112,6 +112,23 @@ await translate('Ring til mig!', 'german', 'danish')
 'Ruf mich an!'
 ```
 
+### Example 3
+
+This will translate a text using a proxy and a DeepL Pro session cookie:
+
+```js
+import { translate } from '@deeplx/core'
+
+await translate('Hello World', 'ZH', 'EN', {
+  proxyUrl: 'http://127.0.0.1:7890',
+  dlSession: 'your_dl_session_cookie',
+})
+```
+
+```log
+'你好，世界'
+```
+
 ## Sponsors and Backers
 
 [![Sponsors and Backers](https://raw.githubusercontent.com/1stG/static/master/sponsors.svg)](https://github.com/sponsors/JounQin)
@@ -139,20 +156,3 @@ Detailed changes for each release are documented in [CHANGELOG.md](./CHANGELOG.m
 [1stG.me]: https://www.1stG.me
 [JounQin]: https://github.com/JounQin
 [MIT]: http://opensource.org/licenses/MIT
-
-### Example 3
-
-This will translate a text using a proxy and a DeepL Pro session cookie:
-
-```js
-import { translate } from '@deeplx/core'
-
-await translate('Hello World', 'ZH', 'EN', {
-  proxyUrl: 'http://127.0.0.1:7890',
-  dlSession: 'your_dl_session_cookie',
-})
-```
-
-```log
-'你好，世界'
-```
