@@ -1,7 +1,7 @@
 ---
-"@deeplx/core": major
-"@deeplx/cli": major
-"deeplx": major
+"@deeplx/core": minor
+"@deeplx/cli": minor
+"deeplx": minor
 ---
 
 feat!: migrate to oneshot API, refactor language mapping, and drop formal support
