@@ -11,7 +11,7 @@ import {
   type TargetLanguage,
 } from '@deeplx/core'
 import { cjsRequire } from '@pkgr/core'
-import { program } from 'commander'
+import { Option, program } from 'commander'
 
 export interface DeepLXCliOptions {
   target: TargetLanguage
@@ -35,7 +35,12 @@ program
   .requiredOption('-t, --target <text>', 'Target language of your desired text')
   .option('--text <text>', 'Text to be translated')
   .option('-f, --file <path>', 'File to be translated')
-  .option('--dl-session <cookie>', 'DeepL Pro session cookie (dl_session)')
+  .addOption(
+    new Option(
+      '--dl-session <cookie>',
+      'DeepL Pro session cookie (dl_session)',
+    ).env('DL_SESSION'),
+  )
   .option('--proxy <url>', 'Proxy URL for the request')
   .action(async function () {
     const { source, target, text, file, dlSession, proxy } =

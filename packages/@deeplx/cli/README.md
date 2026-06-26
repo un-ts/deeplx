@@ -105,10 +105,12 @@ Options:
   -t, --target <text>    Target language of your desired text
   --text <text>          Text to be translated
   -f, --file <path>      File to be translated
-  --dl-session <cookie>  DeepL Pro session cookie (dl_session)
+  --dl-session <cookie>  DeepL Pro session cookie (dl_session) (env: DL_SESSION)
   --proxy <url>          Proxy URL for the request
   -h, --help             display help for command
 ```
+
+The `--dl-session` option also reads from the `DL_SESSION` environment variable as a fallback, which is useful for avoiding credentials in shell history.
 
 ### Example 1
 
