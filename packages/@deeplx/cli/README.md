@@ -54,33 +54,47 @@ yarn add @deeplx/cli
 
 Currently the following languages are supported:
 
-| Abbreviation | Language   | Writing in own language |
-| ------------ | ---------- | ----------------------- |
-| BG           | Bulgarian  | Български               |
-| ZH           | Chinese    | 中文                    |
-| CS           | Czech      | Česky                   |
-| DA           | Danish     | Dansk                   |
-| NL           | Dutch      | Nederlands              |
-| EN           | English    | English                 |
-| ET           | Estonian   | Eesti                   |
-| FI           | Finnish    | Suomi                   |
-| FR           | French     | Français                |
-| DE           | German     | Deutsch                 |
-| EL           | Greek      | Ελληνικά                |
-| HU           | Hungarian  | Magyar                  |
-| IT           | Italian    | Italiano                |
-| JA           | Japanese   | 日本語                  |
-| LV           | Latvian    | Latviešu                |
-| LT           | Lithuanian | Lietuvių                |
-| PL           | Polish     | Polski                  |
-| PT           | Portuguese | Português               |
-| RO           | Romanian   | Română                  |
-| RU           | Russian    | Русский                 |
-| SK           | Slovak     | Slovenčina              |
-| SL           | Slovenian  | Slovenščina             |
-| ES           | Spanish    | Español                 |
-| SV           | Swedish    | Svenska                 |
-| UK           | Ukrainian  | Українська Мова         |
+| Abbreviation | Language                 | Writing in own language |
+| ------------ | ------------------------ | ----------------------- |
+| AR           | Arabic                   | العربية                 |
+| BG           | Bulgarian                | Български               |
+| CS           | Czech                    | Česky                   |
+| DA           | Danish                   | Dansk                   |
+| DE           | German                   | Deutsch                 |
+| EL           | Greek                    | Ελληνικά                |
+| EN           | English                  | English                 |
+| EN-GB        | English (British)        | English (British)       |
+| EN-US        | English (American)       | English (American)      |
+| ES           | Spanish                  | Español                 |
+| ES-419       | Spanish (Latin American) | Español (Latinoamérica) |
+| ET           | Estonian                 | Eesti                   |
+| FI           | Finnish                  | Suomi                   |
+| FR           | French                   | Français                |
+| HE           | Hebrew                   | עברית                   |
+| HU           | Hungarian                | Magyar                  |
+| ID           | Indonesian               | Bahasa Indonesia        |
+| IT           | Italian                  | Italiano                |
+| JA           | Japanese                 | 日本語                  |
+| KO           | Korean                   | 한국어                  |
+| LT           | Lithuanian               | Lietuvių                |
+| LV           | Latvian                  | Latviešu                |
+| NB           | Norwegian Bokmål         | Norsk bokmål            |
+| NL           | Dutch                    | Nederlands              |
+| PL           | Polish                   | Polski                  |
+| PT           | Portuguese               | Português               |
+| PT-BR        | Portuguese (Brazilian)   | Português (Brasil)      |
+| PT-PT        | Portuguese (European)    | Português (Portugal)    |
+| RO           | Romanian                 | Română                  |
+| RU           | Russian                  | Русский                 |
+| SK           | Slovak                   | Slovenčina              |
+| SL           | Slovenian                | Slovenščina             |
+| SV           | Swedish                  | Svenska                 |
+| TR           | Turkish                  | Türkçe                  |
+| UK           | Ukrainian                | Українська Мова         |
+| VI           | Vietnamese               | Tiếng Việt              |
+| ZH           | Chinese                  | 中文                    |
+| ZH-HANS      | Chinese (Simplified)     | 简体中文                |
+| ZH-HANT      | Chinese (Traditional)    | 繁体中文                |
 
 You can either input the abbreviation or the language written in english.
 
