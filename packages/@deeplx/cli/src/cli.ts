@@ -3,9 +3,13 @@
 import './fetch.js'
 
 import fs from 'node:fs/promises'
+import os from 'node:os'
+import path from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 
 import {
+  getSharedCookies,
+  setSharedCookies,
   translate,
   type SourceLanguage,
   type TargetLanguage,
@@ -20,6 +24,42 @@ export interface DeepLXCliOptions {
   file?: string
   dlSession?: string
   proxy?: string
+  skipWarm?: boolean
+  cookie?: string
+}
+
+const COOKIE_CACHE_FILE = path.join(os.homedir(), '.deeplx_cookies')
+const COOKIE_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+interface CookieCache {
+  cookies: string
+  timestamp: number
+}
+
+async function loadCachedCookies(): Promise<string | null> {
+  try {
+    const raw = await fs.readFile(COOKIE_CACHE_FILE, 'utf8')
+    const cache = JSON.parse(raw) as CookieCache
+    if (
+      cache.cookies &&
+      typeof cache.timestamp === 'number' &&
+      Date.now() - cache.timestamp < COOKIE_CACHE_TTL_MS
+    ) {
+      return cache.cookies
+    }
+  } catch {
+    // cache missing or invalid
+  }
+  return null
+}
+
+async function saveCookieCache(cookies: string): Promise<void> {
+  try {
+    const cache: CookieCache = { cookies, timestamp: Date.now() }
+    await fs.writeFile(COOKIE_CACHE_FILE, JSON.stringify(cache), 'utf8')
+  } catch {
+    // ignore cache write errors
+  }
 }
 
 const { version, description } = cjsRequire<{
@@ -42,8 +82,10 @@ program
     ).env('DL_SESSION'),
   )
   .option('--proxy <url>', 'Proxy URL for the request')
+  .option('--skip-warm', 'Skip the warmup cookie fetch')
+  .option('--cookie <value>', 'Provide cookies directly (skips warmup fetch)')
   .action(async function () {
-    const { source, target, text, file, dlSession, proxy } =
+    const { source, target, text, file, dlSession, proxy, skipWarm, cookie } =
       this.opts<DeepLXCliOptions>()
 
     const isTextNil = text == null || text.trim() === ''
@@ -59,6 +101,20 @@ program
       )
     }
 
+    // Resolve cookies to use: explicit --cookie flag > cache > warmup
+    let resolvedCookies: string | undefined
+    let resolvedSkipWarm = skipWarm
+
+    if (cookie) {
+      resolvedCookies = cookie
+    } else if (!dlSession && !skipWarm) {
+      const cached = await loadCachedCookies()
+      if (cached) {
+        setSharedCookies(cached)
+        resolvedSkipWarm = true
+      }
+    }
+
     const translated = await translate(
       isTextNil ? await fs.readFile(file!, 'utf8') : text,
       target,
@@ -66,8 +122,18 @@ program
       {
         dlSession,
         proxyUrl: proxy,
+        skipWarm: resolvedSkipWarm,
+        cookies: resolvedCookies,
       },
     )
+
+    // Persist cookies for future invocations
+    if (!dlSession) {
+      const currentCookies = getSharedCookies()
+      if (currentCookies) {
+        await saveCookieCache(currentCookies)
+      }
+    }
 
     console.log(translated)
   })
