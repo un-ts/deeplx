@@ -113,6 +113,7 @@ program
     } else if (!dlSession) {
       const cached = await loadCachedCookies()
       if (cached) {
+        // Inject cached cookies and skip the network warmup since we already have them
         setSharedCookies(cached)
         resolvedSkipWarm = true
       }

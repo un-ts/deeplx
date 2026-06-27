@@ -36,6 +36,7 @@ function getInstanceID(): string {
 
 let sharedCookies = ''
 let warmupPromise: Promise<void> | null = null
+let cookiesPinned = false
 
 export function getSharedCookies(): string {
   return sharedCookies
@@ -43,6 +44,7 @@ export function getSharedCookies(): string {
 
 export function setSharedCookies(cookies: string): void {
   sharedCookies = cookies
+  cookiesPinned = true
   warmupPromise = Promise.resolve()
 }
 
@@ -67,7 +69,7 @@ async function warmCookies(proxyUrl?: string) {
         if (verifiedBotMatch) {
           cookies.push(verifiedBotMatch[0])
         }
-        if (cookies.length > 0) {
+        if (cookies.length > 0 && !cookiesPinned) {
           sharedCookies = cookies.join('; ')
         }
       }
