@@ -4,6 +4,7 @@ import { translateByDeepLX } from './translate.ts'
 export interface TranslateOptions {
   dlSession?: string
   proxyUrl?: string
+  signal?: AbortSignal
 }
 
 export const translate = async (
@@ -18,6 +19,7 @@ export const translate = async (
     text,
     options?.proxyUrl,
     options?.dlSession,
+    options?.signal,
   )
   if ('message' in result) {
     throw new Error(result.message, { cause: result })

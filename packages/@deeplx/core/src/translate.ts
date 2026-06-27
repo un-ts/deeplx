@@ -186,6 +186,7 @@ export const translateByDeepLX = async (
   text: string,
   proxyUrl?: string,
   dlSession?: string,
+  signal?: AbortSignal,
 ): Promise<DeepLXTranslationResult> => {
   if (!text) {
     return { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' }
@@ -235,6 +236,7 @@ export const translateByDeepLX = async (
         method: 'POST',
         body: reqData,
         headers: buildHeaders(dlSession),
+        signal,
         ...createProxy({ url: proxyUrl }),
       },
     )
