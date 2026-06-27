@@ -9,7 +9,6 @@ import { fileURLToPath, URL } from 'node:url'
 
 import {
   getSharedCookies,
-  setSharedCookies,
   translate,
   type SourceLanguage,
   type TargetLanguage,
@@ -113,8 +112,8 @@ program
     } else if (!dlSession) {
       const cached = await loadCachedCookies()
       if (cached) {
-        // Inject cached cookies and skip the network warmup since we already have them
-        setSharedCookies(cached)
+        // Use cached cookies and skip the network warmup since we already have them
+        resolvedCookies = cached
         resolvedSkipWarm = true
       }
     }

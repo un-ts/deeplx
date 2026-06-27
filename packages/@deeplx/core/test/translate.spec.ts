@@ -1,5 +1,5 @@
 import { beforeEach, expect, test, vi } from 'vitest'
-
+import { type xfetch } from 'x-fetch'
 // Each test gets a fresh module instance so module-level state is isolated.
 beforeEach(() => {
   vi.resetModules()
@@ -10,21 +10,8 @@ test('getSharedCookies returns empty string initially', async () => {
   expect(getSharedCookies()).toBe('')
 })
 
-test('setSharedCookies persists cookies retrievable via getSharedCookies', async () => {
-  const { getSharedCookies, setSharedCookies } = await import('@deeplx/core')
-  setSharedCookies('userCountry=US; verifiedBot=false')
-  expect(getSharedCookies()).toBe('userCountry=US; verifiedBot=false')
-})
-
-test('setSharedCookies overrides previous value', async () => {
-  const { getSharedCookies, setSharedCookies } = await import('@deeplx/core')
-  setSharedCookies('first=value')
-  setSharedCookies('second=value')
-  expect(getSharedCookies()).toBe('second=value')
-})
-
-test('translateByDeepLX with cookies option pins cookies and skips warmup fetch', async () => {
-  const mockXfetch = vi.fn().mockResolvedValue({
+test('translateByDeepLX with cookies option uses local cookies and skips warmup fetch', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
   vi.doMock('x-fetch', () => ({
@@ -35,7 +22,7 @@ test('translateByDeepLX with cookies option pins cookies and skips warmup fetch'
     createProxy: () => ({}),
   }))
 
-  const { getSharedCookies, translateByDeepLX } = await import('@deeplx/core')
+  const { translateByDeepLX } = await import('@deeplx/core')
   const result = await translateByDeepLX(
     'DE',
     'EN',
@@ -49,12 +36,13 @@ test('translateByDeepLX with cookies option pins cookies and skips warmup fetch'
 
   // Only the translation endpoint should be called – not the warmup endpoint
   expect(mockXfetch).toHaveBeenCalledOnce()
-  expect(mockXfetch).toHaveBeenCalledWith(
-    'https://oneshot-free.www.deepl.com/v1/translate',
-    expect.objectContaining({ method: 'POST' }),
-  )
-  // Cookies must be pinned
-  expect(getSharedCookies()).toBe('injected=cookie')
+  const lastCall = mockXfetch.mock.lastCall
+  expect(lastCall![0]).toBe('https://oneshot-free.www.deepl.com/v1/translate')
+  expect(lastCall![1]?.method).toBe('POST')
+  expect(lastCall![1]?.headers).toMatchObject({
+    Cookie: 'injected=cookie',
+  })
+
   expect(result).toMatchObject({
     code: 200,
     data: 'Hello',
@@ -64,7 +52,7 @@ test('translateByDeepLX with cookies option pins cookies and skips warmup fetch'
 })
 
 test('translateByDeepLX with skipWarm option skips warmup fetch', async () => {
-  const mockXfetch = vi.fn().mockResolvedValue({
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
   vi.doMock('x-fetch', () => ({
@@ -94,8 +82,8 @@ test('translateByDeepLX with skipWarm option skips warmup fetch', async () => {
   )
 })
 
-test('setSharedCookies resolves warmupPromise so subsequent calls skip warmup', async () => {
-  const mockXfetch = vi.fn().mockResolvedValue({
+test('translate helper passes cookies option through to translateByDeepLX as local override', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
   vi.doMock('x-fetch', () => ({
@@ -106,46 +94,20 @@ test('setSharedCookies resolves warmupPromise so subsequent calls skip warmup', 
     createProxy: () => ({}),
   }))
 
-  const { setSharedCookies, translateByDeepLX } = await import('@deeplx/core')
-
-  // Inject cookies externally (no warmup)
-  setSharedCookies('userCountry=US; verifiedBot=false')
-
-  // Calling without skipWarm or cookies should still skip the warmup because
-  // setSharedCookies already resolved warmupPromise
-  await translateByDeepLX('DE', 'EN', 'Hallo')
-
-  expect(mockXfetch).toHaveBeenCalledOnce()
-  expect(mockXfetch).not.toHaveBeenCalledWith(
-    'https://www.deepl.com/translator',
-    expect.anything(),
-  )
-})
-
-test('translate helper passes cookies option through to translateByDeepLX', async () => {
-  const mockXfetch = vi.fn().mockResolvedValue({
-    translations: [{ text: 'Hello', detected_source_language: 'DE' }],
-  })
-  vi.doMock('x-fetch', () => ({
-    xfetch: mockXfetch,
-    ResponseError: class ResponseError extends Error {},
-  }))
-  vi.doMock('node-fetch-native/proxy', () => ({
-    createProxy: () => ({}),
-  }))
-
-  const { getSharedCookies, translate } = await import('@deeplx/core')
+  const { translate } = await import('@deeplx/core')
   const result = await translate('Hallo', 'EN', 'DE', {
     cookies: 'via=translate',
   })
 
   expect(result).toBe('Hello')
-  expect(getSharedCookies()).toBe('via=translate')
   expect(mockXfetch).toHaveBeenCalledOnce()
+  expect(mockXfetch.mock.lastCall![1]?.headers).toMatchObject({
+    Cookie: 'via=translate',
+  })
 })
 
 test('translate helper passes skipWarm option through to translateByDeepLX', async () => {
-  const mockXfetch = vi.fn().mockResolvedValue({
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
   vi.doMock('x-fetch', () => ({
@@ -161,8 +123,4 @@ test('translate helper passes skipWarm option through to translateByDeepLX', asy
 
   expect(result).toBe('Hello')
   expect(mockXfetch).toHaveBeenCalledOnce()
-  expect(mockXfetch).not.toHaveBeenCalledWith(
-    'https://www.deepl.com/translator',
-    expect.anything(),
-  )
 })
