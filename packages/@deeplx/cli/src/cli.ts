@@ -56,7 +56,10 @@ async function loadCachedCookies(): Promise<string | null> {
 async function saveCookieCache(cookies: string): Promise<void> {
   try {
     const cache: CookieCache = { cookies, timestamp: Date.now() }
-    await fs.writeFile(COOKIE_CACHE_FILE, JSON.stringify(cache), 'utf8')
+    await fs.writeFile(COOKIE_CACHE_FILE, JSON.stringify(cache), {
+      encoding: 'utf8',
+      mode: 0o600,
+    })
   } catch {
     // ignore cache write errors
   }
@@ -107,7 +110,7 @@ program
 
     if (cookie) {
       resolvedCookies = cookie
-    } else if (!dlSession && !skipWarm) {
+    } else if (!dlSession) {
       const cached = await loadCachedCookies()
       if (cached) {
         setSharedCookies(cached)
