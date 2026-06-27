@@ -37,6 +37,15 @@ function getInstanceID(): string {
 let sharedCookies = ''
 let warmupPromise: Promise<void> | null = null
 
+export function getSharedCookies(): string {
+  return sharedCookies
+}
+
+export function setSharedCookies(cookies: string): void {
+  sharedCookies = cookies
+  warmupPromise = Promise.resolve()
+}
+
 async function warmCookies(proxyUrl?: string) {
   if (warmupPromise !== null) {
     return warmupPromise
@@ -187,6 +196,8 @@ export const translateByDeepLX = async (
   proxyUrl?: string,
   dlSession?: string,
   signal?: AbortSignal,
+  skipWarm?: boolean,
+  cookies?: string,
 ): Promise<DeepLXTranslationResult> => {
   if (!text) {
     return { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' }
@@ -199,7 +210,9 @@ export const translateByDeepLX = async (
     }
   }
 
-  if (!dlSession) {
+  if (cookies) {
+    setSharedCookies(cookies)
+  } else if (!dlSession && !skipWarm) {
     await warmCookies(proxyUrl)
   }
 
