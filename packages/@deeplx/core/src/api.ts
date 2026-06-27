@@ -5,6 +5,8 @@ export interface TranslateOptions {
   dlSession?: string
   proxyUrl?: string
   signal?: AbortSignal
+  skipWarm?: boolean
+  cookies?: string
 }
 
 export const translate = async (
@@ -20,6 +22,8 @@ export const translate = async (
     options?.proxyUrl,
     options?.dlSession,
     options?.signal,
+    options?.skipWarm,
+    options?.cookies,
   )
   if ('message' in result) {
     throw new Error(result.message, { cause: result })

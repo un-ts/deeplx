@@ -36,6 +36,9 @@ function getInstanceID(): string {
 
 let sharedCookies = ''
 let warmupPromise: Promise<void> | null = null
+export function getSharedCookies(): string {
+  return sharedCookies
+}
 
 async function warmCookies(proxyUrl?: string) {
   if (warmupPromise !== null) {
@@ -122,7 +125,10 @@ function parseTranslationError(
   }
 }
 
-function buildHeaders(dlSession?: string): Record<string, string> {
+function buildHeaders(
+  dlSession?: string,
+  requestCookies?: string,
+): Record<string, string> {
   const authValue = dlSession ? `Bearer ${dlSession}` : 'None'
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -135,7 +141,9 @@ function buildHeaders(dlSession?: string): Record<string, string> {
     'Accept-Encoding': 'gzip, deflate, br',
     'User-Agent': `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${IMPERSONATED_CHROME_MAJOR}.0.0.0 Safari/537.36`,
   }
-  if (sharedCookies) {
+  if (requestCookies) {
+    headers['Cookie'] = requestCookies
+  } else if (sharedCookies) {
     headers['Cookie'] = sharedCookies
   }
   return headers
@@ -187,6 +195,8 @@ export const translateByDeepLX = async (
   proxyUrl?: string,
   dlSession?: string,
   signal?: AbortSignal,
+  skipWarm?: boolean,
+  cookies?: string,
 ): Promise<DeepLXTranslationResult> => {
   if (!text) {
     return { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' }
@@ -199,8 +209,10 @@ export const translateByDeepLX = async (
     }
   }
 
-  if (!dlSession) {
+  let requestCookies = cookies
+  if (!requestCookies && !dlSession && !skipWarm) {
     await warmCookies(proxyUrl)
+    requestCookies = sharedCookies
   }
 
   const targetResult = resolveLang(targetLang, 'target')
@@ -235,7 +247,7 @@ export const translateByDeepLX = async (
       {
         method: 'POST',
         body: reqData,
-        headers: buildHeaders(dlSession),
+        headers: buildHeaders(dlSession, requestCookies),
         signal,
         ...createProxy({ url: proxyUrl }),
       },
