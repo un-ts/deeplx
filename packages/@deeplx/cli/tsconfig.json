@@ -3,10 +3,7 @@
   "compilerOptions": {
     "composite": true,
     "rootDir": "src",
-    "outDir": "lib",
-    "paths": {
-      "@deeplx/core": ["../../@deeplx/core/src/index.ts"]
-    }
+    "outDir": "lib"
   },
   "include": ["src"]
 }
