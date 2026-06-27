@@ -1,5 +1,11 @@
 # @deeplx/core
 
+## 0.2.1
+
+### Patch Changes
+
+- [#52](https://github.com/un-ts/deeplx/pull/52) [`8b3ef08`](https://github.com/un-ts/deeplx/commit/8b3ef08bc76c8a9d77a22bb831b762bdb6840144) Thanks [@maxchang3](https://github.com/maxchang3)! - feat: support `AbortSignal` in translate to allow cancellation of upstream requests
+
 ## 0.2.0
 
 ### Minor Changes
