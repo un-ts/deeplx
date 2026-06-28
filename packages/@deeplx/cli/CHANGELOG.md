@@ -1,5 +1,14 @@
 # @deeplx/cli
 
+## 0.2.1
+
+### Patch Changes
+
+- [#56](https://github.com/un-ts/deeplx/pull/56) [`3305517`](https://github.com/un-ts/deeplx/commit/33055171a65504b851341cedcbfd14dd08d34ea9) Thanks [@copilot-swe-agent](https://github.com/apps/copilot-swe-agent)! - feat: optimize warmCookies for ephemeral environments
+
+- Updated dependencies [[`3305517`](https://github.com/un-ts/deeplx/commit/33055171a65504b851341cedcbfd14dd08d34ea9)]:
+  - @deeplx/core@0.2.2
+
 ## 0.2.0
 
 ### Minor Changes

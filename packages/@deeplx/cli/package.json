@@ -1,6 +1,6 @@
 {
   "name": "@deeplx/cli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "The cli for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/packages/@deeplx/core), a powerful and easy-to-use yet free DeepL API client for Node.js using [DeepL](https://www.deepl.com) by porting [OwO-Network/DeepLX](https://github.com/OwO-Network/DeepLX).",
   "repository": "git+https://github.com/un-ts/deeplx.git",
@@ -38,7 +38,7 @@
     "translator"
   ],
   "dependencies": {
-    "@deeplx/core": "^0.2.0",
+    "@deeplx/core": "^0.2.2",
     "commander": "^15.0.0",
     "node-fetch-native": "^1.6.7"
   },

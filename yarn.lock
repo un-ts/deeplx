@@ -2292,7 +2292,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@deeplx/cli@workspace:packages/@deeplx/cli"
   dependencies:
-    "@deeplx/core": "npm:^0.2.0"
+    "@deeplx/core": "npm:^0.2.2"
     commander: "npm:^15.0.0"
     node-fetch-native: "npm:^1.6.7"
   bin:
@@ -2300,7 +2300,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@deeplx/core@npm:^0.2.0, @deeplx/core@workspace:*, @deeplx/core@workspace:packages/@deeplx/core":
+"@deeplx/core@npm:^0.2.0, @deeplx/core@npm:^0.2.2, @deeplx/core@workspace:*, @deeplx/core@workspace:packages/@deeplx/core":
   version: 0.0.0-use.local
   resolution: "@deeplx/core@workspace:packages/@deeplx/core"
   dependencies:
