@@ -2305,7 +2305,7 @@ __metadata:
   resolution: "@deeplx/core@workspace:packages/@deeplx/core"
   dependencies:
     node-fetch-native: "npm:^1.6.7"
-    x-fetch: "npm:^0.2.6"
+    x-fetch: "npm:^0.3.0"
   languageName: unknown
   linkType: soft
 
@@ -13535,10 +13535,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"x-fetch@npm:^0.2.6":
-  version: 0.2.6
-  resolution: "x-fetch@npm:0.2.6"
-  checksum: 10c0/f6510ae0b5d612fb0f5ce3f55552468d5979040f171a4e69bd718a36e741c4d8e6154697557be6e771fba3fe4467d730d50b3d87d8f70d15d92dedefa9a07fbe
+"x-fetch@npm:^0.3.0":
+  version: 0.3.0
+  resolution: "x-fetch@npm:0.3.0"
+  checksum: 10c0/4f9f1a354d0cf8de40e7e537ec368566df99b257d7c196c89cbef63b7c383cec4f718256e44e3526e65b48225c536994ae727f66b2f10f4857701a86e93619e0
   languageName: node
   linkType: hard
 
