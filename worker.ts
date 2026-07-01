@@ -60,8 +60,7 @@ export default {
       }
 
       const body = (await req.json().catch(() => null)) as
-        | RequestParams
-        | undefined
+        RequestParams | undefined
 
       if (!body) {
         return json(

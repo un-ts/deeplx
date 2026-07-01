@@ -45,5 +45,4 @@ export interface DeepLXTranslationSuccessResult {
 
 // DeepLXTranslationResult represents the final translation result
 export type DeepLXTranslationResult =
-  | DeepLXTranslationErrorResult
-  | DeepLXTranslationSuccessResult
+  DeepLXTranslationErrorResult | DeepLXTranslationSuccessResult
