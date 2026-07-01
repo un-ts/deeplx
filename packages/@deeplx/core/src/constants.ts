@@ -53,9 +53,7 @@ export type Language =
   | `${SupportedCode}-${string}`
 
 export type TargetLanguage =
-  | Language
-  | Lowercase<Language>
-  | Uppercase<Language>
+  Language | Lowercase<Language> | Uppercase<Language>
 
 export type SourceLanguage = TargetLanguage | 'auto'
 
