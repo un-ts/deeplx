@@ -5,6 +5,16 @@ beforeEach(() => {
   vi.resetModules()
 })
 
+// Every test in this file mocks the same two modules; keep the setup in one
+// place so there is a single copy of it.
+function setupXfetchMock(
+  mockXfetch: unknown,
+  ResponseError: unknown = class ResponseError extends Error {},
+) {
+  vi.doMock('x-fetch', () => ({ xfetch: mockXfetch, ResponseError }))
+  vi.doMock('node-fetch-native/proxy', () => ({ createProxy: () => ({}) }))
+}
+
 test('getSharedCookies returns empty string initially', async () => {
   const { getSharedCookies } = await import('@deeplx/core')
   expect(getSharedCookies()).toBe('')
@@ -14,13 +24,7 @@ test('translateByDeepLX with cookies option uses local cookies and skips warmup 
   const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
-  vi.doMock('x-fetch', () => ({
-    xfetch: mockXfetch,
-    ResponseError: class ResponseError extends Error {},
-  }))
-  vi.doMock('node-fetch-native/proxy', () => ({
-    createProxy: () => ({}),
-  }))
+  setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
   const result = await translateByDeepLX(
@@ -55,13 +59,7 @@ test('translateByDeepLX with skipWarm option skips warmup fetch', async () => {
   const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
-  vi.doMock('x-fetch', () => ({
-    xfetch: mockXfetch,
-    ResponseError: class ResponseError extends Error {},
-  }))
-  vi.doMock('node-fetch-native/proxy', () => ({
-    createProxy: () => ({}),
-  }))
+  setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
   await translateByDeepLX(
@@ -86,13 +84,7 @@ test('translate helper passes cookies option through to translateByDeepLX as loc
   const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
-  vi.doMock('x-fetch', () => ({
-    xfetch: mockXfetch,
-    ResponseError: class ResponseError extends Error {},
-  }))
-  vi.doMock('node-fetch-native/proxy', () => ({
-    createProxy: () => ({}),
-  }))
+  setupXfetchMock(mockXfetch)
 
   const { translate } = await import('@deeplx/core')
   const result = await translate('Hallo', 'EN', 'DE', {
@@ -110,13 +102,7 @@ test('translate helper passes skipWarm option through to translateByDeepLX', asy
   const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
-  vi.doMock('x-fetch', () => ({
-    xfetch: mockXfetch,
-    ResponseError: class ResponseError extends Error {},
-  }))
-  vi.doMock('node-fetch-native/proxy', () => ({
-    createProxy: () => ({}),
-  }))
+  setupXfetchMock(mockXfetch)
 
   const { translate } = await import('@deeplx/core')
   const result = await translate('Hallo', 'EN', 'DE', { skipWarm: true })
@@ -152,13 +138,7 @@ test('translateByDeepLX surfaces the DeepL 403 detail from the response body', a
     // Any other status keeps the plain response-derived message.
     .mockRejectedValueOnce(new MockResponseError({ status: 500 }))
 
-  vi.doMock('x-fetch', () => ({
-    xfetch: mockXfetch,
-    ResponseError: MockResponseError,
-  }))
-  vi.doMock('node-fetch-native/proxy', () => ({
-    createProxy: () => ({}),
-  }))
+  setupXfetchMock(mockXfetch, MockResponseError)
 
   const { translateByDeepLX } = await import('@deeplx/core')
   const call = () =>
@@ -192,13 +172,7 @@ test('source_lang is sent as the generic zh while targets keep their script vari
   const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'ZH' }],
   })
-  vi.doMock('x-fetch', () => ({
-    xfetch: mockXfetch,
-    ResponseError: class ResponseError extends Error {},
-  }))
-  vi.doMock('node-fetch-native/proxy', () => ({
-    createProxy: () => ({}),
-  }))
+  setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
   const lastBody = () =>

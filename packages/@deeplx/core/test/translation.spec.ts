@@ -1,6 +1,6 @@
 import { setTimeout } from 'node:timers/promises'
 
-import { translate } from 'deeplx'
+import { translate, type SourceLanguage } from 'deeplx'
 
 function randRange(min: number, max: number) {
   // eslint-disable-next-line sonarjs/pseudo-random
@@ -86,18 +86,21 @@ test('german translation', async () => {
 // English, and with an English target the input comes back unchanged with a
 // 200. A mixed-script string is what exposes it; unambiguous Chinese translates
 // either way.
-test('mixed-script Chinese translates when Simplified source is declared', async () => {
-  const text =
-    ' TypeScript 实践：自定义装饰器拦截 Angular Input 转化为 Observable'
-  const translation = await translate(text, 'EN', 'ZH')
-  expect(translation).not.toBe(text)
-  expect(translation).toContain('TypeScript')
-})
+test('mixed-script Chinese translates when the Chinese script is declared', async () => {
+  const cases: ReadonlyArray<readonly [SourceLanguage, string]> = [
+    [
+      'ZH',
+      ' TypeScript 实践：自定义装饰器拦截 Angular Input 转化为 Observable',
+    ],
+    [
+      'ZH-HANT',
+      ' TypeScript 實踐：自訂裝飾器攔截 Angular Input 轉化為 Observable',
+    ],
+  ]
 
-test('mixed-script Chinese translates when Traditional source is declared', async () => {
-  const text =
-    ' TypeScript 實踐：自訂裝飾器攔截 Angular Input 轉化為 Observable'
-  const translation = await translate(text, 'EN', 'ZH-HANT')
-  expect(translation).not.toBe(text)
-  expect(translation).toContain('TypeScript')
+  for (const [sourceLang, text] of cases) {
+    const translation = await translate(text, 'EN', sourceLang)
+    expect(translation, `source_lang=${sourceLang}`).not.toBe(text)
+    expect(translation, `source_lang=${sourceLang}`).toContain('TypeScript')
+  }
 })
