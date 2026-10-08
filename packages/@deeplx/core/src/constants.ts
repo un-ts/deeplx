@@ -170,7 +170,7 @@ export const SOURCE_LANG_MAP: Record<string, string> = {
   // DeepL's source codes are the generic language forms. zh-Hans/zh-Hant are
   // target-only script variants: sent as a source hint they are silently
   // ignored, so ambiguous mixed-script Chinese fell back to auto-detection and
-  // came back untranslated (#239). Mirrors OwO-Network/DLX@6ff3cfa.
+  // came back untranslated (OwO-Network/DLX#239).
   ZH: 'zh',
   'ZH-HANS': 'zh',
   'ZH-HANT': 'zh',
