@@ -50,7 +50,11 @@ async function warmCookies(proxyUrl?: string) {
         type: null,
         ...createProxy({ url: proxyUrl }),
       })
-      const setCookie = res.headers.get('set-cookie')
+      const setCookie =
+        // `Set-Cookie` is a forbidden response header name, and `getSetCookie()`
+        // is unavailable on some supported runtimes (before Node 18.14).
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        res.headers.getSetCookie?.().join('; ') ?? res.headers.get('set-cookie')
       if (setCookie) {
         const cookies: string[] = []
         const userCountryMatch = /userCountry=[^;]+/.exec(setCookie)
