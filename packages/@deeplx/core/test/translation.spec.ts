@@ -1,6 +1,6 @@
 import { setTimeout } from 'node:timers/promises'
 
-import { translate } from 'deeplx'
+import { translate, type SourceLanguage } from 'deeplx'
 
 function randRange(min: number, max: number) {
   // eslint-disable-next-line sonarjs/pseudo-random
@@ -78,4 +78,29 @@ test('german translation', async () => {
   ]
   const translation = await translate(text, 'DE')
   expect(expected_translations).toContain(translation)
+})
+
+// Regression: the Chinese regional codes encode *script*, not region, and DeepL
+// does not accept zh-Hans / zh-Hant as a source hint — it behaves as if
+// source_lang were omitted, auto-detection then reads the Latin terms as
+// English, and with an English target the input comes back unchanged with a
+// 200. A mixed-script string is what exposes it; unambiguous Chinese translates
+// either way.
+test('mixed-script Chinese translates when the Chinese script is declared', async () => {
+  const cases: ReadonlyArray<readonly [SourceLanguage, string]> = [
+    [
+      'ZH',
+      ' TypeScript 实践：自定义装饰器拦截 Angular Input 转化为 Observable',
+    ],
+    [
+      'ZH-HANT',
+      ' TypeScript 實踐：自訂裝飾器攔截 Angular Input 轉化為 Observable',
+    ],
+  ]
+
+  for (const [sourceLang, text] of cases) {
+    const translation = await translate(text, 'EN', sourceLang)
+    expect(translation, `source_lang=${sourceLang}`).not.toBe(text)
+    expect(translation, `source_lang=${sourceLang}`).toContain('TypeScript')
+  }
 })

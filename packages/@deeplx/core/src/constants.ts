@@ -160,12 +160,18 @@ export const TARGET_LANG_MAP: Record<string, string> = {
 
 /**
  * SOURCE_LANG_MAP is what the API accepts as `source_lang`. It is a superset of
- * TARGET_LANG_MAP: EN and PT are first-class source codes mapping to the
- * generic "en"/"pt" — used when the caller knows the input is
- * English/Portuguese but does not want to commit to a regional variant.
+ * TARGET_LANG_MAP: EN and PT are first-class source codes mapping to the generic
+ * "en"/"pt", and the Chinese codes all map to the generic "zh".
  */
 export const SOURCE_LANG_MAP: Record<string, string> = {
   ...TARGET_LANG_MAP,
   EN: 'en',
   PT: 'pt',
+  // DeepL's source codes are the generic language forms. zh-Hans/zh-Hant are
+  // target-only script variants: sent as a source hint they are silently
+  // ignored, so ambiguous mixed-script Chinese fell back to auto-detection and
+  // came back untranslated (OwO-Network/DLX#239).
+  ZH: 'zh',
+  'ZH-HANS': 'zh',
+  'ZH-HANT': 'zh',
 }
