@@ -199,6 +199,10 @@ test('source_lang is sent as the generic zh while targets keep their script vari
     undefined,
     true,
   )
+  // Guard against a vacuous pass: if "ZH-HANS" were rejected as a source code,
+  // translateByDeepLX would return 400 before calling xfetch and lastBody()
+  // would still hold the "zh-hant" request above.
+  expect(mockXfetch).toHaveBeenCalledTimes(2)
   expect(lastBody()).toMatchObject({ source_lang: 'zh' })
 
   // The target side keeps the script variant, and "auto" still omits the field.
