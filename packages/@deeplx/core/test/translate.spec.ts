@@ -124,3 +124,66 @@ test('translate helper passes skipWarm option through to translateByDeepLX', asy
   expect(result).toBe('Hello')
   expect(mockXfetch).toHaveBeenCalledOnce()
 })
+
+test('translateByDeepLX surfaces the DeepL 403 detail from the response body', async () => {
+  class MockResponseError extends Error {
+    constructor(
+      readonly response: { status: number },
+      readonly data?: { title?: string; message?: string },
+    ) {
+      super(String(response.status))
+    }
+  }
+
+  const mockXfetch = vi
+    .fn<typeof xfetch>()
+    // DeepL answers the iOS "ItaClient" outcomes with a title, a message, or
+    // neither; each has to fall back in that order.
+    .mockRejectedValueOnce(
+      new MockResponseError({ status: 403 }, { title: 'OutdatedClient' }),
+    )
+    .mockRejectedValueOnce(
+      new MockResponseError(
+        { status: 403 },
+        { message: 'AuthenticationFailed' },
+      ),
+    )
+    .mockRejectedValueOnce(new MockResponseError({ status: 403 }))
+    // Any other status keeps the plain response-derived message.
+    .mockRejectedValueOnce(new MockResponseError({ status: 500 }))
+
+  vi.doMock('x-fetch', () => ({
+    xfetch: mockXfetch,
+    ResponseError: MockResponseError,
+  }))
+  vi.doMock('node-fetch-native/proxy', () => ({
+    createProxy: () => ({}),
+  }))
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  const call = () =>
+    translateByDeepLX(
+      'DE',
+      'EN',
+      'Hallo',
+      undefined,
+      undefined,
+      undefined,
+      true,
+    )
+
+  await expect(call()).resolves.toMatchObject({
+    code: 403,
+    message: 'OutdatedClient',
+  })
+  await expect(call()).resolves.toMatchObject({
+    code: 403,
+    message: 'AuthenticationFailed',
+  })
+  await expect(call()).resolves.toMatchObject({
+    code: 403,
+    message:
+      'request forbidden by DeepL (auth failed, outdated client, or blocked)',
+  })
+  await expect(call()).resolves.toMatchObject({ code: 500 })
+})
