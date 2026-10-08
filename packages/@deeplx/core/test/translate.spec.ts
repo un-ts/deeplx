@@ -187,3 +187,56 @@ test('translateByDeepLX surfaces the DeepL 403 detail from the response body', a
   })
   await expect(call()).resolves.toMatchObject({ code: 500 })
 })
+
+test('source_lang is sent as the generic zh while targets keep their script variants', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    translations: [{ text: 'Hello', detected_source_language: 'ZH' }],
+  })
+  vi.doMock('x-fetch', () => ({
+    xfetch: mockXfetch,
+    ResponseError: class ResponseError extends Error {},
+  }))
+  vi.doMock('node-fetch-native/proxy', () => ({
+    createProxy: () => ({}),
+  }))
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  const lastBody = () =>
+    mockXfetch.mock.lastCall?.[1]?.body as Record<string, unknown> | undefined
+
+  // Mirrors OwO-Network/DLX translate/lang_test.go: lowercase inputs too.
+  await translateByDeepLX(
+    'zh-hant',
+    'EN',
+    '你好',
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+  expect(lastBody()).toMatchObject({ source_lang: 'zh', target_lang: 'en-US' })
+
+  await translateByDeepLX(
+    'ZH-HANS',
+    'EN',
+    '你好',
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+  expect(lastBody()).toMatchObject({ source_lang: 'zh' })
+
+  // The target side keeps the script variant, and "auto" still omits the field.
+  await translateByDeepLX(
+    undefined,
+    'zh-hant',
+    '你好',
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+  expect(lastBody()).toMatchObject({ target_lang: 'zh-Hant' })
+  expect(lastBody()?.source_lang).toBeUndefined()
+})
