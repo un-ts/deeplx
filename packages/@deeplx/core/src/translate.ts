@@ -6,14 +6,17 @@ import { ResponseError, xfetch } from 'x-fetch'
 import {
   ONESHOT_FREE_ENDPOINT,
   ONESHOT_PRO_ENDPOINT,
-  CHROME_EXTENSION_ID,
-  CHROME_EXTENSION_VERSION,
-  IMPERSONATED_CHROME_MAJOR,
+  IOS_APP_BUILD,
+  IOS_APP_VERSION,
+  IOS_CFNETWORK_VERSION,
+  IOS_DARWIN_VERSION,
+  IOS_OS_VERSION,
   MAX_FREE_TEXT_LENGTH,
   HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_OK,
   HTTP_STATUS_SERVICE_UNAVAILABLE,
   HTTP_STATUS_BAD_REQUEST,
+  HTTP_STATUS_FORBIDDEN,
   HTTP_STATUS_PAYLOAD_TOO_LARGE,
   HTTP_STATUS_TOO_MANY_REQUESTS,
   TARGET_LANG_MAP,
@@ -32,6 +35,14 @@ let instanceID_: string | undefined
 function getInstanceID(): string {
   // eslint-disable-next-line sonarjs/no-nested-assignment
   return (instanceID_ ??= randomUUID())
+}
+
+// Sent as `x-app-session-id`; stable for the process lifetime and independent
+// of the instance ID, like the iOS app.
+let sessionID_: string | undefined
+function getSessionID(): string {
+  // eslint-disable-next-line sonarjs/no-nested-assignment
+  return (sessionID_ ??= randomUUID())
 }
 
 let sharedCookies = ''
@@ -120,6 +131,22 @@ function parseTranslationError(
     if (status === HTTP_STATUS_TOO_MANY_REQUESTS) {
       return { code: status, id: reqId, message: 'too many requests, ...' }
     }
+    if (status === HTTP_STATUS_FORBIDDEN) {
+      // iOS surfaces this as Forbidden / AuthenticationFailed / OutdatedClient
+      // / UserBlocked depending on the body; collapse to 403 with any detail.
+      const { data } = error as ResponseError<{
+        title?: string
+        message?: string
+      }>
+      return {
+        code: status,
+        id: reqId,
+        message:
+          data?.title ||
+          data?.message ||
+          'request forbidden by DeepL (auth failed, outdated client, or blocked)',
+      }
+    }
     return { code: status, id: reqId, message: error.message }
   }
   return {
@@ -137,13 +164,19 @@ function buildHeaders(
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     Accept: '*/*',
-    Authorization: authValue,
-    Origin: `chrome-extension://${CHROME_EXTENSION_ID}`,
-    'Sec-Fetch-Site': 'cross-site',
-    'Sec-Fetch-Mode': 'cors',
-    'Sec-Fetch-Dest': 'empty',
+    // URLSession defaults for a data task.
     'Accept-Encoding': 'gzip, deflate, br',
-    'User-Agent': `Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${IMPERSONATED_CHROME_MAJOR}.0.0.0 Safari/537.36`,
+    'Accept-Language': 'en-US,en;q=0.9',
+    Authorization: authValue,
+    // URLSession product-style User-Agent: CFBundleName/short version +
+    // CFNetwork + Darwin. Do not invent alternate formats (e.g. embedding the
+    // bundle ID) — a mismatched UA is a cheap ban signal.
+    'User-Agent': `DeepL/${IOS_APP_VERSION} CFNetwork/${IOS_CFNETWORK_VERSION} Darwin/${IOS_DARWIN_VERSION}`,
+    // ClientInfos.appHeaders — only these three x-app-* keys exist in the iOS
+    // binary.
+    'x-app-os-version': IOS_OS_VERSION,
+    'x-app-instance-id': getInstanceID(),
+    'x-app-session-id': getSessionID(),
   }
   if (requestCookies) {
     headers['Cookie'] = requestCookies
@@ -233,12 +266,12 @@ export const translateByDeepLX = async (
     text: [text],
     target_lang: targetResult.value,
     source_lang: sourceResult.value,
-    usage_type: 'Translate',
+    usage_type: 'translate',
     app_information: {
-      os: 'brex_macOS',
-      os_version: `brex_chrome_${IMPERSONATED_CHROME_MAJOR}.0.0.0`,
-      app_version: CHROME_EXTENSION_VERSION,
-      app_build: 'chrome_web_store',
+      os: 'iOS',
+      os_version: IOS_OS_VERSION,
+      app_version: IOS_APP_VERSION,
+      app_build: IOS_APP_BUILD,
       instance_id: getInstanceID(),
     },
   }

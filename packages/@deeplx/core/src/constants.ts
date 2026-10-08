@@ -64,13 +64,39 @@ export const ONESHOT_FREE_ENDPOINT =
 export const ONESHOT_PRO_ENDPOINT =
   'https://oneshot-pro.www.deepl.com/v1/translate'
 
+/**
+ * Request profile pinned to the official DeepL iOS app (26.42, build 5443737),
+ * mirroring OwO-Network/DLX. DeepL rate-limits clients whose TLS fingerprint,
+ * User-Agent and `app_information` tell inconsistent stories, so every value
+ * below must stay on one coherent iOS profile.
+ *
+ * `IOS_OS_VERSION` is what the app reports through `UIDevice.systemVersion` and
+ * `x-app-os-version`. It must be a shipping iOS major: the IPA is built against
+ * iphoneos26.5, and a future value combined with an iOS TLS fingerprint is
+ * rejected with HTTP 429 (and can temporarily ban the IP).
+ */
+export const IOS_APP_VERSION = '26.42'
+export const IOS_APP_BUILD = '5443737'
+export const IOS_OS_VERSION = '26.0'
+export const IOS_CFNETWORK_VERSION = '3826.600.41'
+export const IOS_DARWIN_VERSION = '25.0.0'
+
+/**
+ * @deprecated The oneshot client now impersonates the DeepL iOS app (see
+ * {@link IOS_APP_VERSION}); the Chrome-extension constants are no longer sent
+ * on the wire. They are kept so the exported surface does not break and can be
+ * removed in a future major release.
+ */
 export const IMPERSONATED_CHROME_MAJOR = '120'
+/** @deprecated see {@link IMPERSONATED_CHROME_MAJOR} */
 export const CHROME_EXTENSION_VERSION = '1.86.0'
+/** @deprecated see {@link IMPERSONATED_CHROME_MAJOR} */
 export const CHROME_EXTENSION_ID = 'cofdbpoegempjloogbagkncekinflcnj'
 export const MAX_FREE_TEXT_LENGTH = 1500
 
 export const HTTP_STATUS_OK = 200
 export const HTTP_STATUS_BAD_REQUEST = 400
+export const HTTP_STATUS_FORBIDDEN = 403
 export const HTTP_STATUS_NOT_FOUND = 404
 export const HTTP_STATUS_NOT_ALLOWED = 405
 export const HTTP_STATUS_PAYLOAD_TOO_LARGE = 413
