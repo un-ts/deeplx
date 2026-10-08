@@ -1,5 +1,50 @@
 # @deeplx/core
 
+## 0.2.3
+
+### Patch Changes
+
+- [#70](https://github.com/un-ts/deeplx/pull/70) [`b974208`](https://github.com/un-ts/deeplx/commit/b97420824c90519cb26f6c98ebc25fbf085ef524) Thanks [@JounQin](https://github.com/JounQin)! - fix: align the oneshot client with the DeepL iOS request profile
+
+  The anonymous oneshot request now mirrors the official DeepL iOS app, matching
+  the reverse engineering in OwO-Network/DLX:
+
+  - The iOS `User-Agent` (`DeepL/26.42 CFNetwork/3826.600.41 Darwin/25.0.0`) and
+    the three `ClientInfos.appHeaders` keys (`x-app-os-version`,
+    `x-app-instance-id`, `x-app-session-id`) replace the Chrome-extension profile
+    (`Origin: chrome-extension://…`, the `Sec-Fetch-*` set and the Chrome UA).
+  - `app_information` reports the iOS app (`os: "iOS"`, `os_version: "26.0"`,
+    `app_version: "26.42"`, `app_build: "5443737"`) and `usage_type` is the
+    lower-case `"translate"`, exactly as the iOS client serializes it.
+  - New exports `IOS_APP_VERSION`, `IOS_APP_BUILD`, `IOS_OS_VERSION`,
+    `IOS_CFNETWORK_VERSION`, `IOS_DARWIN_VERSION` and `HTTP_STATUS_FORBIDDEN`; the
+    Chrome-extension constants are deprecated but still exported so the public
+    surface does not break.
+  - An HTTP 403 from DeepL is surfaced with the upstream `title`/`message` detail
+    instead of a bare status text.
+
+  The iOS TLS ClientHello (utls `HelloIOS_Auto` upstream) cannot be reproduced on
+  `fetch`, so the runtime's own TLS stack is used and only the HTTP profile is
+  aligned.
+
+- [#68](https://github.com/un-ts/deeplx/pull/68) [`830ff11`](https://github.com/un-ts/deeplx/commit/830ff111d5cd641f8ad7d4d0836a6d71a8a78b58) Thanks [@JounQin](https://github.com/JounQin)! - fix: read `Set-Cookie` through `getSetCookie()` when available
+
+  `Headers.getSetCookie()` is the accessor the current Fetch spec requires, and a
+  runtime that hides `Set-Cookie` from `headers.get()` must provide it. Reading the
+  warm-up cookies through it parses each `Set-Cookie` separately instead of
+  depending on comma-joined concatenation, so we no longer rely on the non-standard
+  `get('set-cookie')` behaviour of some runtimes.
+
+  Measured on workerd 1.20260625.1: `get('set-cookie')` returns a joined string
+  (not `null`) at every compatibility date tried, `getSetCookie()` is enabled by the
+  `http_headers_getsetcookie` compatibility flag and on by default from
+  compatibility date `2023-03-01` (undefined at `2023-02-01`, present at
+  `2023-03-01`), and Workers' own `getAll('set-cookie')` also exists -- Cloudflare's
+  docs are stale here. workerd behaviour is therefore unchanged by this patch: it is
+  a portability and robustness fix, **not** a fix for the reported "silent echo",
+  which is DeepL answering `200` with the input text whenever it declines to
+  translate.
+
 ## 0.2.2
 
 ### Patch Changes
