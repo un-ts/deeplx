@@ -1,5 +1,7 @@
 import { beforeEach, expect, test, vi } from 'vitest'
 import { type xfetch } from 'x-fetch'
+
+import type { DeepLXTranslationSuccessResult } from '@deeplx/core'
 // Each test gets a fresh module instance so module-level state is isolated.
 beforeEach(() => {
   vi.resetModules()
@@ -217,4 +219,66 @@ test('source_lang is sent as the generic zh while targets keep their script vari
   )
   expect(lastBody()).toMatchObject({ target_lang: 'zh-Hant' })
   expect(lastBody()?.source_lang).toBeUndefined()
+})
+
+test('languageDetectionConfident passes is_language_detection_confident through', async () => {
+  const mockXfetch = vi
+    .fn<typeof xfetch>()
+    // Confident: the detected language wins over the requested `source_lang`.
+    .mockResolvedValueOnce({
+      translations: [
+        {
+          text: 'Hello',
+          detected_source_language: 'DE',
+          is_language_detection_confident: true,
+        },
+      ],
+    })
+    // Not confident: the endpoint mirrors the requested `zh` even though the
+    // sentence is English, which looks like a real `ZH` detection without this
+    // flag.
+    .mockResolvedValueOnce({
+      translations: [
+        {
+          text: 'Hello',
+          detected_source_language: 'ZH',
+          is_language_detection_confident: false,
+        },
+      ],
+    })
+    // Absent: an older response that does not report the flag at all.
+    .mockResolvedValueOnce({
+      translations: [{ text: 'Hello', detected_source_language: 'EN' }],
+    })
+  setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  const call = () =>
+    translateByDeepLX(
+      'ZH',
+      'EN',
+      'Hello',
+      undefined,
+      undefined,
+      undefined,
+      true,
+    )
+
+  await expect(call()).resolves.toMatchObject({
+    code: 200,
+    sourceLang: 'DE',
+    languageDetectionConfident: true,
+  })
+  await expect(call()).resolves.toMatchObject({
+    code: 200,
+    sourceLang: 'ZH',
+    languageDetectionConfident: false,
+  })
+
+  const unknown = (await call()) as DeepLXTranslationSuccessResult
+  expect(unknown).toMatchObject({ code: 200, sourceLang: 'EN' })
+  expect(unknown.languageDetectionConfident).toBeUndefined()
+  // Nothing to report means nothing on the wire either.
+  expect(JSON.stringify(unknown)).not.toContain('languageDetectionConfident')
+  expect(mockXfetch).toHaveBeenCalledTimes(3)
 })

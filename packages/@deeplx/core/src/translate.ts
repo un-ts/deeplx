@@ -222,6 +222,7 @@ function processTranslationResponse(
     sourceLang: detectedLang,
     targetLang,
     method: dlSession ? 'Pro' : 'Free',
+    languageDetectionConfident: mainTranslation.is_language_detection_confident,
   }
 }
 
