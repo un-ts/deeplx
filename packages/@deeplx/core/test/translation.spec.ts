@@ -79,3 +79,25 @@ test('german translation', async () => {
   const translation = await translate(text, 'DE')
   expect(expected_translations).toContain(translation)
 })
+
+// Regression: the Chinese regional codes encode *script*, not region, and DeepL
+// does not accept zh-Hans / zh-Hant as a source hint — it behaves as if
+// source_lang were omitted, auto-detection then reads the Latin terms as
+// English, and with an English target the input comes back unchanged with a
+// 200. A mixed-script string is what exposes it; unambiguous Chinese translates
+// either way.
+test('mixed-script Chinese translates when Simplified source is declared', async () => {
+  const text =
+    ' TypeScript 实践：自定义装饰器拦截 Angular Input 转化为 Observable'
+  const translation = await translate(text, 'EN', 'ZH')
+  expect(translation).not.toBe(text)
+  expect(translation).toContain('TypeScript')
+})
+
+test('mixed-script Chinese translates when Traditional source is declared', async () => {
+  const text =
+    ' TypeScript 實踐：自訂裝飾器攔截 Angular Input 轉化為 Observable'
+  const translation = await translate(text, 'EN', 'ZH-HANT')
+  expect(translation).not.toBe(text)
+  expect(translation).toContain('TypeScript')
+})
