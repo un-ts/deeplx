@@ -89,8 +89,7 @@ async function warmCookies(proxyUrl?: string) {
 }
 
 type ResolveResult<T> =
-  | { success: false; error: string }
-  | { success: true; value: T }
+  { success: false; error: string } | { success: true; value: T }
 
 function resolveLang(code: string, kind: 'target'): ResolveResult<string>
 function resolveLang(
