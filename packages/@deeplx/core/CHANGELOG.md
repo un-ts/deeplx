@@ -1,5 +1,21 @@
 # @deeplx/core
 
+## 0.2.5
+
+### Patch Changes
+
+- [#63](https://github.com/un-ts/deeplx/pull/63) [`b5de5c1`](https://github.com/un-ts/deeplx/commit/b5de5c15b07ded1998a57c8530f93c7e97bcf2f5) Thanks [@renovate](https://github.com/apps/renovate)! - fix: update `x-fetch` to `0.3` and migrate the oneshot error handling
+
+  `x-fetch@0.3` replaces `ResponseError` with `XFetchError` plus the
+  `isXFetchError` type guard, so `parseTranslationError` now narrows through that
+  guard instead of `instanceof`.
+
+  The same class also wraps transport failures and bodies that cannot be parsed,
+  so only a response with an error status is treated as a DeepL status; an `ok`
+  response can never be reported as a successful translation. The observable
+  behaviour of the `403` (with `title`/`message` detail), `429` and other-status
+  branches is unchanged.
+
 ## 0.2.4
 
 ### Patch Changes
