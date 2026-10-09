@@ -38,9 +38,10 @@ jobs:
         id: changesets
         uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
         with:
-          commit: 'chore: release deeplx'
-          title: 'chore: release deeplx'
-          publish: yarn release
-          version: yarn run version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # v2 renamed the root inputs and no longer reads `GITHUB_TOKEN` from
+          # the environment: https://github.com/changesets/action/releases/tag/v2.0.0
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: release deeplx'
+          pr-title: 'chore: release deeplx'
+          publish-script: yarn release
+          version-script: yarn run version
