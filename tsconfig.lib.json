@@ -1,5 +1,6 @@
 {
   "extends": ".",
+  "files": [],
   "references": [
     {
       "path": "./packages/@deeplx/core"

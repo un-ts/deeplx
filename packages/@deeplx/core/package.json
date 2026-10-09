@@ -45,7 +45,7 @@
   ],
   "dependencies": {
     "node-fetch-native": "^1.6.7",
-    "x-fetch": "^0.2.6"
+    "x-fetch": "^0.3.0"
   },
   "publishConfig": {
     "access": "public"

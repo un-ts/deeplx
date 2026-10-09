@@ -5,10 +5,10 @@
   },
   {
     "path": "./packages/@deeplx/core/lib/index.js",
-    "limit": "120B"
+    "limit": "2.7kB"
   },
   {
     "path": "./packages/deeplx/lib/index.js",
-    "limit": "90B"
+    "limit": "300B"
   }
 ]

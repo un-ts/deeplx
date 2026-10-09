@@ -1,18 +1,28 @@
-import { beforeEach, expect, test, vi } from 'vitest'
-import { type xfetch } from 'x-fetch'
+import { beforeEach, expect, test, vi, type Mock } from 'vitest'
+import { type xfetch, type XFetchMiddlewareContext } from 'x-fetch'
+
+import { HTTP_STATUS_FORBIDDEN, HTTP_STATUS_INTERNAL_ERROR } from '@deeplx/core'
+
 // Each test gets a fresh module instance so module-level state is isolated.
 beforeEach(() => {
   vi.resetModules()
 })
 
 // Every test in this file mocks the same two modules; keep the setup in one
-// place so there is a single copy of it.
-function setupXfetchMock(
-  mockXfetch: unknown,
-  ResponseError: unknown = class ResponseError extends Error {},
-) {
-  vi.doMock('x-fetch', () => ({ xfetch: mockXfetch, ResponseError }))
+// place. The actual `x-fetch` exports are kept — `XFetchError` and
+// `isXFetchError` are the contract under test — and only the network call is
+// replaced.
+async function setupXfetchMock(mock: Mock<typeof xfetch>) {
+  const actual = await vi.importActual<typeof import('x-fetch')>('x-fetch')
+  vi.doMock('x-fetch', () => ({ ...actual, xfetch: mock }))
   vi.doMock('node-fetch-native/proxy', () => ({ createProxy: () => ({}) }))
+  return actual
+}
+
+const errorContext: XFetchMiddlewareContext = {
+  url: 'https://oneshot-free.www.deepl.com/v1/translate',
+  method: 'POST',
+  headers: new Headers(),
 }
 
 test('getSharedCookies returns empty string initially', async () => {
@@ -24,7 +34,7 @@ test('translateByDeepLX with cookies option uses local cookies and skips warmup 
   const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
-  setupXfetchMock(mockXfetch)
+  await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
   const result = await translateByDeepLX(
@@ -59,7 +69,7 @@ test('translateByDeepLX with skipWarm option skips warmup fetch', async () => {
   const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
-  setupXfetchMock(mockXfetch)
+  await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
   await translateByDeepLX(
@@ -84,7 +94,7 @@ test('translate helper passes cookies option through to translateByDeepLX as loc
   const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
-  setupXfetchMock(mockXfetch)
+  await setupXfetchMock(mockXfetch)
 
   const { translate } = await import('@deeplx/core')
   const result = await translate('Hallo', 'EN', 'DE', {
@@ -102,7 +112,7 @@ test('translate helper passes skipWarm option through to translateByDeepLX', asy
   const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'DE' }],
   })
-  setupXfetchMock(mockXfetch)
+  await setupXfetchMock(mockXfetch)
 
   const { translate } = await import('@deeplx/core')
   const result = await translate('Hallo', 'EN', 'DE', { skipWarm: true })
@@ -112,33 +122,32 @@ test('translate helper passes skipWarm option through to translateByDeepLX', asy
 })
 
 test('translateByDeepLX surfaces the DeepL 403 detail from the response body', async () => {
-  class MockResponseError extends Error {
-    constructor(
-      readonly response: { status: number },
-      readonly data?: { title?: string; message?: string },
-    ) {
-      super(String(response.status))
-    }
-  }
+  const mockXfetch = vi.fn<typeof xfetch>()
+  const { XFetchError } = await setupXfetchMock(mockXfetch)
+  const error = (
+    status: number,
+    data?: { title?: string; message?: string },
+    statusText?: string,
+  ) =>
+    new XFetchError(errorContext, {
+      response: new Response(null, { status, statusText }),
+      data,
+    })
 
-  const mockXfetch = vi
-    .fn<typeof xfetch>()
-    // DeepL answers the iOS "ItaClient" outcomes with a title, a message, or
-    // neither; each has to fall back in that order.
+  // DeepL answers the iOS "ItaClient" outcomes with a title, a message, or
+  // neither; each has to fall back in that order.
+  mockXfetch
     .mockRejectedValueOnce(
-      new MockResponseError({ status: 403 }, { title: 'OutdatedClient' }),
+      error(HTTP_STATUS_FORBIDDEN, { title: 'OutdatedClient' }),
     )
     .mockRejectedValueOnce(
-      new MockResponseError(
-        { status: 403 },
-        { message: 'AuthenticationFailed' },
-      ),
+      error(HTTP_STATUS_FORBIDDEN, { message: 'AuthenticationFailed' }),
     )
-    .mockRejectedValueOnce(new MockResponseError({ status: 403 }))
+    .mockRejectedValueOnce(error(HTTP_STATUS_FORBIDDEN))
     // Any other status keeps the plain response-derived message.
-    .mockRejectedValueOnce(new MockResponseError({ status: 500 }))
-
-  setupXfetchMock(mockXfetch, MockResponseError)
+    .mockRejectedValueOnce(
+      error(HTTP_STATUS_INTERNAL_ERROR, undefined, 'Internal Server Error'),
+    )
 
   const { translateByDeepLX } = await import('@deeplx/core')
   const call = () =>
@@ -165,14 +174,44 @@ test('translateByDeepLX surfaces the DeepL 403 detail from the response body', a
     message:
       'request forbidden by DeepL (auth failed, outdated client, or blocked)',
   })
-  await expect(call()).resolves.toMatchObject({ code: 500 })
+  await expect(call()).resolves.toMatchObject({
+    code: 500,
+    message: 'Internal Server Error',
+  })
+})
+
+test('translateByDeepLX reports an unparseable success body as service unavailable', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>()
+  const { XFetchError } = await setupXfetchMock(mockXfetch)
+  // `x-fetch` wraps an unparseable 2xx body in `XFetchError` too; an `ok`
+  // response is not a DeepL error status and must not be reported as success.
+  mockXfetch.mockRejectedValueOnce(
+    new XFetchError(errorContext, {
+      response: new Response('{', { status: 200 }),
+      data: '{',
+      cause: new SyntaxError('Unexpected end of JSON input'),
+    }),
+  )
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  await expect(
+    translateByDeepLX(
+      'DE',
+      'EN',
+      'Hallo',
+      undefined,
+      undefined,
+      undefined,
+      true,
+    ),
+  ).resolves.toMatchObject({ code: 503 })
 })
 
 test('source_lang is sent as the generic zh while targets keep their script variants', async () => {
   const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
     translations: [{ text: 'Hello', detected_source_language: 'ZH' }],
   })
-  setupXfetchMock(mockXfetch)
+  await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
   const lastBody = () =>

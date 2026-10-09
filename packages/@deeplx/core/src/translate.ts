@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 
 import { createProxy } from 'node-fetch-native/proxy'
-import { ResponseError, xfetch } from 'x-fetch'
+import { isXFetchError, xfetch } from 'x-fetch'
 
 import {
   ONESHOT_FREE_ENDPOINT,
@@ -126,28 +126,31 @@ function parseTranslationError(
   error: unknown,
   reqId: number,
 ): DeepLXTranslationResult {
-  if (error instanceof ResponseError) {
-    const status = error.response.status
-    if (status === HTTP_STATUS_TOO_MANY_REQUESTS) {
-      return { code: status, id: reqId, message: 'too many requests, ...' }
-    }
-    if (status === HTTP_STATUS_FORBIDDEN) {
-      // iOS surfaces this as Forbidden / AuthenticationFailed / OutdatedClient
-      // / UserBlocked depending on the body; collapse to 403 with any detail.
-      const { data } = error as ResponseError<{
-        title?: string
-        message?: string
-      }>
-      return {
-        code: status,
-        id: reqId,
-        message:
-          data?.title ||
-          data?.message ||
-          'request forbidden by DeepL (auth failed, outdated client, or blocked)',
+  // `x-fetch` wraps transport failures, non-2xx responses and unparseable
+  // bodies alike in `XFetchError`; only an error status carries DeepL's detail.
+  if (isXFetchError<{ title?: string; message?: string }>(error)) {
+    const { response } = error
+    if (response && !response.ok) {
+      const status = response.status
+      if (status === HTTP_STATUS_TOO_MANY_REQUESTS) {
+        return { code: status, id: reqId, message: 'too many requests, ...' }
       }
+      if (status === HTTP_STATUS_FORBIDDEN) {
+        // iOS surfaces this as Forbidden / AuthenticationFailed /
+        // OutdatedClient / UserBlocked depending on the body; collapse to 403
+        // with any detail.
+        const { data } = error
+        return {
+          code: status,
+          id: reqId,
+          message:
+            data?.title ||
+            data?.message ||
+            'request forbidden by DeepL (auth failed, outdated client, or blocked)',
+        }
+      }
+      return { code: status, id: reqId, message: error.message }
     }
-    return { code: status, id: reqId, message: error.message }
   }
   return {
     code: HTTP_STATUS_SERVICE_UNAVAILABLE,
