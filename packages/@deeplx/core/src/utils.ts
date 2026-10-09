@@ -5,8 +5,7 @@ import {
 } from './constants.ts'
 
 let abbreviateLanguageDictionary:
-  | Record<Lowercase<Language>, SupportedCode>
-  | undefined
+  Record<Lowercase<Language>, SupportedCode> | undefined
 
 function getAbbreviateLanguages() {
   // eslint-disable-next-line sonarjs/no-nested-assignment
