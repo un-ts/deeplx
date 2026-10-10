@@ -129,8 +129,10 @@ program
 
     const concurrency = resolveConcurrency(concurrencyOption)
 
-    // A blank value means "not given", as it did for the single-value options.
-    const texts = (text ?? []).filter(value => value.trim() !== '')
+    // A blank text is a segment like any other — the client answers it with
+    // itself, so blank lines keep their place in the output — while a blank file
+    // path is not a file at all.
+    const texts = text ?? []
     const files = (file ?? []).filter(value => value.trim() !== '')
     const isTextNil = texts.length === 0
     const isFileNil = files.length === 0

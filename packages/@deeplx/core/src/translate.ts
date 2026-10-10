@@ -12,7 +12,6 @@ import {
   IOS_DARWIN_VERSION,
   IOS_OS_VERSION,
   MAX_FREE_TEXT_LENGTH,
-  HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_OK,
   HTTP_STATUS_SERVICE_UNAVAILABLE,
   HTTP_STATUS_BAD_REQUEST,
@@ -282,24 +281,31 @@ async function resolveRequestCookies(
 }
 
 /**
- * A batch needs at least one translatable text to ask the endpoint about. An
- * empty array, or one whose segments are all blank, has nothing to translate,
- * so the call fails as a whole instead of resolving to a success nobody
- * requested.
- *
- * A blank segment (empty or whitespace-only) is not rejected, and it is not
- * sent either: `restoreBlankSegments` answers it locally with the original
- * text — the translation of whitespace is that whitespace — which keeps the
- * positions of a segmented document aligned and spares the endpoint a segment
- * with nothing to translate.
+ * The texts the endpoint has to translate: a blank one (empty or whitespace
+ * only) carries nothing, so it is not sent and is answered with itself by
+ * `restoreBlankSegments`. Nothing about emptiness is an error — an empty list is
+ * answered with an empty list — which is what the server-side sibling does too.
  */
-function batchPayload(texts: readonly string[]): string[] {
-  if (texts.every(value => value.trim() === '')) {
-    throw new Error('No text to translate', {
-      cause: { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' },
-    })
-  }
+function textsToTranslate(texts: readonly string[]): string[] {
   return texts.filter(value => value.trim() !== '')
+}
+
+/** The success result for a request the endpoint never had to see. */
+function localResult(
+  texts: readonly string[],
+  sourceLang: SourceLanguage | undefined,
+  targetLang: TargetLanguage,
+  dlSession: string | undefined,
+): DeepLXTranslationResult<string[]> {
+  return {
+    code: HTTP_STATUS_OK,
+    id: Date.now(),
+    data: [...texts],
+    alternatives: [],
+    sourceLang: sourceLang || 'auto',
+    targetLang,
+    method: dlSession ? 'Pro' : 'Free',
+  }
 }
 
 /**
@@ -418,22 +424,34 @@ export async function translateByDeepLX(
   // and the failure modes differ between the two.
   const texts = typeof text === 'string' ? [text] : [...text]
 
-  // A blank segment is not a request: it is answered locally with its own text
-  // (there is nothing to translate in it), so the positions of a segmented
-  // document stay aligned and the endpoint is only asked about real text. A
-  // single empty string keeps its own "no text to translate" result below.
-  const payload = isBatch ? batchPayload(texts) : texts
-
-  if (!isBatch && !text) {
-    return { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' }
-  }
+  // Nothing about emptiness is an error: a blank text (empty or whitespace
+  // only) is not sent and is answered with itself, so the positions of a
+  // segmented document stay aligned, and an empty list is answered with an
+  // empty list.
+  const payload = textsToTranslate(texts)
 
   // The anonymous oneshot endpoint caps the *sum* of all `text` items, so a
-  // batch has to be chunked by total length, not by segment count.
+  // batch has to be chunked by total length, not by segment count. Blank texts
+  // are not charged against the cap, because they are never sent.
   const totalLength = payload.reduce((length, item) => length + item.length, 0)
   const tooLong = lengthError(totalLength, texts.length, isBatch)
   if (tooLong) {
     return tooLong
+  }
+
+  const languages = resolveLanguages(sourceLang, targetLang)
+  if ('error' in languages) {
+    return { code: HTTP_STATUS_BAD_REQUEST, message: languages.error }
+  }
+
+  if (payload.length === 0) {
+    // There is nothing to ask the endpoint about: mirror the request back.
+    return finalizeResult(
+      localResult(texts, sourceLang, targetLang, dlSession),
+      texts,
+      payload,
+      isBatch,
+    )
   }
 
   const requestCookies = await resolveRequestCookies(
@@ -442,11 +460,6 @@ export async function translateByDeepLX(
     proxyUrl,
     skipWarm,
   )
-
-  const languages = resolveLanguages(sourceLang, targetLang)
-  if ('error' in languages) {
-    return { code: HTTP_STATUS_BAD_REQUEST, message: languages.error }
-  }
 
   const reqData: OneshotRequest = {
     text: payload,

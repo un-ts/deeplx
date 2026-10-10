@@ -161,9 +161,8 @@ const data = await translate(['Hello world', 'How are you?'], 'ZH', 'EN')
 // ['你好，世界', '你好吗？']
 ```
 
-A string argument keeps its previous shape exactly: the resolved value is a
-`string`, and the request body, the response fields and the error results are
-unchanged.
+A string argument resolves to a `string` instead of an array; when it carries
+text, the request body and the response fields are the same as before.
 
 #### Chunk by total length, not by segment count
 
@@ -188,15 +187,21 @@ chunk, so the call fails with the `413` result instead of silently dropping it.
 The library still sends exactly one request per call: the number of requests
 stays the caller's decision.
 
-#### A batch fails as a whole
+#### Emptiness is not an error
 
-A batch either succeeds with one translation per text or fails entirely: an empty
-array (or a batch whose segments are all blank) throws, and a response whose
-`translations` length differs from the requested texts throws too, rather than
-returning placeholders or misaligned data. A blank segment (empty or whitespace-only) among non-blank ones is not a failure and is not sent either: it is answered locally with its own text, so the positions of a segmented document stay aligned. The thrown `Error` carries the library's error result as its `cause`.
-Transport and endpoint errors are still returned as error results by
-`translateByDeepLX`, and thrown as an `Error` by `translate`, exactly as for a
-string input (a single whitespace-only string is still sent, as before).
+Every position is answered: a text that carries something is translated, and a
+blank text (empty or whitespace-only) is returned exactly as it arrived without
+being sent. A document split into lines therefore keeps its blank lines, an empty
+array is answered with an empty array, and a blank string with that same string —
+the endpoint is never asked about a request that has nothing to translate. This
+mirrors the server-side `/translate`.
+
+The one failure left is a response that does not line up with the texts that were
+sent: a `translations` array that is shorter, longer or missing throws a count
+mismatch `Error` carrying the library's error result as its `cause`, instead of
+returning misaligned data. Transport and endpoint errors are still returned as
+error results by `translateByDeepLX`, and thrown as an `Error` by `translate`,
+exactly as before.
 
 ## Sponsors and Backers
 

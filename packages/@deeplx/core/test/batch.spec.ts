@@ -2,7 +2,6 @@ import { beforeEach, expect, test, vi, type Mock } from 'vitest'
 import { type xfetch } from 'x-fetch'
 
 import {
-  HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_PAYLOAD_TOO_LARGE,
   HTTP_STATUS_SERVICE_UNAVAILABLE,
   MAX_FREE_TEXT_LENGTH,
@@ -77,7 +76,7 @@ test('a string input keeps its one-element request and a string `data`', async (
   }
 })
 
-test('an empty string keeps resolving to the existing 404 result', async () => {
+test('an empty string is answered with itself, without a request', async () => {
   const mockXfetch = vi.fn<typeof xfetch>()
   await setupXfetchMock(mockXfetch)
 
@@ -92,10 +91,7 @@ test('an empty string keeps resolving to the existing 404 result', async () => {
     true,
   )
 
-  expect(result).toMatchObject({
-    code: HTTP_STATUS_NOT_FOUND,
-    message: 'No text to translate',
-  })
+  expect(result).toMatchObject({ code: 200, data: '' })
   expect(mockXfetch).not.toHaveBeenCalled()
 })
 
@@ -240,20 +236,22 @@ test('a batch response with more translations than texts is rejected', async () 
   })
 })
 
-test('an empty batch is rejected before any request is made', async () => {
+test('an empty batch is answered with an empty list', async () => {
   const mockXfetch = vi.fn<typeof xfetch>()
   await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
-  const error = await rejectedError(
-    translateByDeepLX('DE', 'EN', [], undefined, undefined, undefined, true),
+  const result = await translateByDeepLX(
+    'DE',
+    'EN',
+    [],
+    undefined,
+    undefined,
+    undefined,
+    true,
   )
 
-  expect(error.message).toBe('No text to translate')
-  expect(causeOf(error)).toEqual({
-    code: HTTP_STATUS_NOT_FOUND,
-    message: 'No text to translate',
-  })
+  expect(result).toMatchObject({ code: 200, data: [] })
   expect(mockXfetch).not.toHaveBeenCalled()
 })
 
@@ -513,28 +511,23 @@ test('empty segments at either end keep their positions', async () => {
   expect(result).toMatchObject({ code: 200, data: ['', 'one', ''] })
 })
 
-test('a batch whose segments are all blank is rejected', async () => {
+test('a batch whose segments are all blank is answered with them', async () => {
   const mockXfetch = vi.fn<typeof xfetch>()
   await setupXfetchMock(mockXfetch)
 
+  const texts = ['', '   ', '\t\n']
   const { translateByDeepLX } = await import('@deeplx/core')
-  const error = await rejectedError(
-    translateByDeepLX(
-      'DE',
-      'EN',
-      ['', '   ', '\t\n'],
-      undefined,
-      undefined,
-      undefined,
-      true,
-    ),
+  const result = await translateByDeepLX(
+    'DE',
+    'EN',
+    texts,
+    undefined,
+    undefined,
+    undefined,
+    true,
   )
 
-  expect(error.message).toBe('No text to translate')
-  expect(causeOf(error)).toEqual({
-    code: HTTP_STATUS_NOT_FOUND,
-    message: 'No text to translate',
-  })
+  expect(result).toMatchObject({ code: 200, data: texts })
   expect(mockXfetch).not.toHaveBeenCalled()
 })
 
@@ -635,15 +628,11 @@ test('a string response with no translations still resolves to the 503 result', 
   })
 })
 
-test('a whitespace-only string is still sent, as before', async () => {
-  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
-    translations: [{ text: '   ' }],
-  })
+test('a whitespace-only string is answered locally', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>()
   await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
-  // The single-text path keeps its previous request shape, and the endpoint
-  // echoes whitespace back unchanged.
   const result = await translateByDeepLX(
     'DE',
     'EN',
@@ -654,7 +643,43 @@ test('a whitespace-only string is still sent, as before', async () => {
     true,
   )
 
-  expect(mockXfetch).toHaveBeenCalledOnce()
-  expect(lastBody(mockXfetch)).toMatchObject({ text: ['   '] })
+  // Whitespace carries nothing, so it is answered with itself rather than being
+  // sent for the endpoint to echo.
   expect(result).toMatchObject({ code: 200, data: '   ' })
+  expect(mockXfetch).not.toHaveBeenCalled()
+})
+
+test('an unsupported language is still rejected for a blank request', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>()
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  const result = await translateByDeepLX(
+    'DE',
+    // @ts-expect-error -- only supported languages are accepted by the types
+    'klingon',
+    ['', '   '],
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+
+  expect(mockXfetch).not.toHaveBeenCalled()
+  expect(result).toMatchObject({
+    code: 400,
+    message: 'unsupported target_lang "klingon"',
+  })
+})
+
+test('the translate helper answers a blank text with itself', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>()
+  await setupXfetchMock(mockXfetch)
+
+  const { translate } = await import('@deeplx/core')
+  await expect(translate('', 'EN', 'DE', { skipWarm: true })).resolves.toBe('')
+  await expect(
+    translate(['', '   '], 'EN', 'DE', { skipWarm: true }),
+  ).resolves.toStrictEqual(['', '   '])
+  expect(mockXfetch).not.toHaveBeenCalled()
 })

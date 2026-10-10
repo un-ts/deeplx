@@ -276,3 +276,16 @@ test('a non-positive --concurrency fails the command', async () => {
   )
   expect(translate).not.toHaveBeenCalled()
 })
+
+test('a blank --text value is a segment, answered with itself', async () => {
+  const translate = vi.fn<Translate>().mockResolvedValue(['Hallo', '', 'Welt'])
+  const { log } = await runCli(
+    ['-t', 'ZH', '--text', 'Hallo', '--text', '', '--text', 'Welt'],
+    translate,
+  )
+
+  await vi.waitFor(() => expect(log).toHaveBeenCalledOnce(), WAIT)
+  expect(translate).toHaveBeenCalledOnce()
+  expect(translate.mock.calls[0][0]).toStrictEqual(['Hallo', '', 'Welt'])
+  expect(log).toHaveBeenCalledWith('Hallo\n\nWelt')
+})
