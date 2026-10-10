@@ -13,6 +13,7 @@ import {
   translate,
   type SourceLanguage,
   type TargetLanguage,
+  type TranslateOptions,
 } from '@deeplx/core'
 import { cjsRequire } from '@pkgr/core'
 import { Option, program } from 'commander'
@@ -80,6 +81,87 @@ function resolveConcurrency(value: string | undefined): number {
   return concurrency
 }
 
+/** Every value is one segment, in the order the options were given. */
+async function resolveSegments(
+  text: string[] | undefined,
+  file: string[] | undefined,
+): Promise<string[]> {
+  // A blank text is a segment like any other — the client answers it with
+  // itself, so blank lines keep their place in the output — while a blank file
+  // path is not a file at all.
+  const texts = text ?? []
+  const files = (file ?? []).filter(value => value.trim() !== '')
+
+  if (texts.length === 0 && files.length === 0) {
+    throw new Error('One of `text` or `file` option must be specified')
+  }
+
+  if (texts.length > 0 && files.length > 0) {
+    console.warn(
+      'Both `text` and `file` options provided, `text` will take precedence',
+    )
+  }
+
+  return texts.length > 0
+    ? texts
+    : Promise.all(files.map(value => fs.readFile(value, 'utf8')))
+}
+
+/** Explicit `--cookie` wins, then the cache, which also skips the warm-up. */
+async function resolveCookies(
+  cookie: string | undefined,
+  dlSession: string | undefined,
+): Promise<{ cookies?: string; skipWarm?: boolean }> {
+  if (cookie) {
+    return { cookies: cookie }
+  }
+  if (dlSession) {
+    return {}
+  }
+  const cached = await loadCachedCookies()
+  return cached ? { cookies: cached, skipWarm: true } : {}
+}
+
+/** One chunked request: the languages plus everything `translate` forwards. */
+interface ChunkRequest extends TranslateOptions {
+  concurrency: number
+  target: TargetLanguage
+  source?: SourceLanguage
+}
+
+/**
+ * One request per chunk: the endpoint caps the *sum* of all text items, so the
+ * segments are batched by total length, not by segment count. Chunks go out a
+ * wave at a time, so `--concurrency` stays bounded and the results keep the
+ * order of the segments they came from.
+ */
+async function translateChunks(
+  chunks: readonly string[][],
+  request: ChunkRequest,
+): Promise<string[]> {
+  const { concurrency, target, source, ...options } = request
+  const translated: string[] = []
+  for (let index = 0; index < chunks.length; index += concurrency) {
+    const wave = chunks.slice(index, index + concurrency)
+    const results = await Promise.all(
+      wave.map(chunk => translate(chunk, target, source, options)),
+    )
+    translated.push(...results.flat())
+  }
+  return translated
+}
+
+/** Persist the shared cookies for the next invocation. */
+async function saveCookies(dlSession: string | undefined): Promise<void> {
+  if (dlSession) {
+    return
+  }
+  const currentCookies = getSharedCookies()
+  if (currentCookies) {
+    await saveCookieCache(currentCookies)
+  }
+}
+
 const { version, description } = cjsRequire<{
   version: string
   description: string
@@ -128,73 +210,23 @@ program
     } = this.opts<DeepLXCliOptions>()
 
     const concurrency = resolveConcurrency(concurrencyOption)
+    const segments = await resolveSegments(text, file)
+    const { cookies, skipWarm: cachedSkipWarm } = await resolveCookies(
+      cookie,
+      dlSession,
+    )
 
-    // A blank text is a segment like any other — the client answers it with
-    // itself, so blank lines keep their place in the output — while a blank file
-    // path is not a file at all.
-    const texts = text ?? []
-    const files = (file ?? []).filter(value => value.trim() !== '')
-    const isTextNil = texts.length === 0
-    const isFileNil = files.length === 0
+    const translated = await translateChunks(chunkByLength(segments), {
+      concurrency,
+      target,
+      source,
+      dlSession,
+      proxyUrl: proxy,
+      skipWarm: cachedSkipWarm ?? skipWarm,
+      cookies,
+    })
 
-    if (isTextNil && isFileNil) {
-      throw new Error('One of `text` or `file` option must be specified')
-    }
-
-    if (!isTextNil && !isFileNil) {
-      console.warn(
-        'Both `text` and `file` options provided, `text` will take precedence',
-      )
-    }
-
-    // Every value is one segment, and the output follows this order.
-    const segments = isTextNil
-      ? await Promise.all(files.map(value => fs.readFile(value, 'utf8')))
-      : texts
-
-    // Resolve cookies to use: explicit --cookie flag > cache > warmup
-    let resolvedCookies: string | undefined
-    let resolvedSkipWarm = skipWarm
-
-    if (cookie) {
-      resolvedCookies = cookie
-    } else if (!dlSession) {
-      const cached = await loadCachedCookies()
-      if (cached) {
-        // Use cached cookies and skip the network warmup since we already have them
-        resolvedCookies = cached
-        resolvedSkipWarm = true
-      }
-    }
-
-    // One request per chunk: the endpoint caps the *sum* of all text items, so
-    // the segments are batched by total length, not by segment count. Chunks go
-    // out a wave at a time, so `--concurrency` stays bounded and the results
-    // keep the order of the segments they came from.
-    const chunks = chunkByLength(segments)
-    const translated: string[] = []
-    for (let index = 0; index < chunks.length; index += concurrency) {
-      const wave = chunks.slice(index, index + concurrency)
-      const results = await Promise.all(
-        wave.map(chunk =>
-          translate(chunk, target, source, {
-            dlSession,
-            proxyUrl: proxy,
-            skipWarm: resolvedSkipWarm,
-            cookies: resolvedCookies,
-          }),
-        ),
-      )
-      translated.push(...results.flat())
-    }
-
-    // Persist cookies for future invocations
-    if (!dlSession) {
-      const currentCookies = getSharedCookies()
-      if (currentCookies) {
-        await saveCookieCache(currentCookies)
-      }
-    }
+    await saveCookies(dlSession)
 
     // One line per segment, in the order they were given.
     console.log(translated.join('\n'))
