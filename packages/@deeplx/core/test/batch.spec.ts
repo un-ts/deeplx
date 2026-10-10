@@ -5,6 +5,8 @@ import {
   HTTP_STATUS_PAYLOAD_TOO_LARGE,
   HTTP_STATUS_SERVICE_UNAVAILABLE,
   MAX_FREE_TEXT_LENGTH,
+  type DeepLXBatchTranslationResult,
+  type DeepLXTranslationResult,
 } from '@deeplx/core'
 
 // Each test gets a fresh module instance so module-level state is isolated.
@@ -39,6 +41,34 @@ async function rejectedError(promise: Promise<unknown>): Promise<Error> {
 
 function causeOf(error: Error): unknown {
   return (error as { cause?: unknown }).cause
+}
+
+// A request whose texts all carry nothing is answered locally, so the transport
+// mock stays un-called: every blank test only varies the text and the answer.
+async function localAnswer(text: string): Promise<DeepLXTranslationResult>
+async function localAnswer(
+  text: readonly string[],
+): Promise<DeepLXBatchTranslationResult>
+async function localAnswer(
+  text: string | readonly string[],
+): Promise<DeepLXBatchTranslationResult | DeepLXTranslationResult> {
+  const mockXfetch = vi.fn<typeof xfetch>()
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  // The value keeps its runtime shape; the cast only selects one overload.
+  const result = await translateByDeepLX(
+    'DE',
+    'EN',
+    text as readonly string[],
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+
+  expect(mockXfetch).not.toHaveBeenCalled()
+  return result
 }
 
 test('a string input keeps its one-element request and a string `data`', async () => {
@@ -77,22 +107,8 @@ test('a string input keeps its one-element request and a string `data`', async (
 })
 
 test('an empty string is answered with itself, without a request', async () => {
-  const mockXfetch = vi.fn<typeof xfetch>()
-  await setupXfetchMock(mockXfetch)
-
-  const { translateByDeepLX } = await import('@deeplx/core')
-  const result = await translateByDeepLX(
-    'DE',
-    'EN',
-    '',
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
-
+  const result = await localAnswer('')
   expect(result).toMatchObject({ code: 200, data: '' })
-  expect(mockXfetch).not.toHaveBeenCalled()
 })
 
 test('a string input over the limit keeps its existing 413 message', async () => {
@@ -237,22 +253,8 @@ test('a batch response with more translations than texts is rejected', async () 
 })
 
 test('an empty batch is answered with an empty list', async () => {
-  const mockXfetch = vi.fn<typeof xfetch>()
-  await setupXfetchMock(mockXfetch)
-
-  const { translateByDeepLX } = await import('@deeplx/core')
-  const result = await translateByDeepLX(
-    'DE',
-    'EN',
-    [],
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
-
+  const result = await localAnswer([])
   expect(result).toMatchObject({ code: 200, data: [] })
-  expect(mockXfetch).not.toHaveBeenCalled()
 })
 
 test('a batch that keeps a segment untranslated fails the whole call', async () => {
@@ -512,23 +514,9 @@ test('empty segments at either end keep their positions', async () => {
 })
 
 test('a batch whose segments are all blank is answered with them', async () => {
-  const mockXfetch = vi.fn<typeof xfetch>()
-  await setupXfetchMock(mockXfetch)
-
   const texts = ['', '   ', '\t\n']
-  const { translateByDeepLX } = await import('@deeplx/core')
-  const result = await translateByDeepLX(
-    'DE',
-    'EN',
-    texts,
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
-
+  const result = await localAnswer(texts)
   expect(result).toMatchObject({ code: 200, data: texts })
-  expect(mockXfetch).not.toHaveBeenCalled()
 })
 
 test('the total-length limit counts UTF-16 code units, as the endpoint does', async () => {
@@ -629,24 +617,10 @@ test('a string response with no translations still resolves to the 503 result', 
 })
 
 test('a whitespace-only string is answered locally', async () => {
-  const mockXfetch = vi.fn<typeof xfetch>()
-  await setupXfetchMock(mockXfetch)
-
-  const { translateByDeepLX } = await import('@deeplx/core')
-  const result = await translateByDeepLX(
-    'DE',
-    'EN',
-    '   ',
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
-
   // Whitespace carries nothing, so it is answered with itself rather than being
   // sent for the endpoint to echo.
+  const result = await localAnswer('   ')
   expect(result).toMatchObject({ code: 200, data: '   ' })
-  expect(mockXfetch).not.toHaveBeenCalled()
 })
 
 test('an unsupported language is still rejected for a blank request', async () => {
