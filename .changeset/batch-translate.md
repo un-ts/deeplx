@@ -23,6 +23,13 @@ response whose `translations` length does not line up with the requested texts
 throw an `Error` carrying the library's `DeepLXTranslationErrorResult` as
 `cause`, instead of returning placeholders or misaligned data.
 
+`chunkByLength` is exported so that a caller can split a document into requests
+that stay within the limit without copying the packing rule out of the README; it
+never splits a segment, and a segment longer than the limit keeps its own chunk
+so the call fails with the `413` result instead of the segment being dropped.
+The library still sends exactly one request per call — the number of requests
+stays the caller's decision.
+
 The CLI is aligned on top of it: `--text` and `--file` are repeatable, every
 value is a segment of one batch, and `deeplx` chunks those segments by total
 length, so one invocation translates a whole document in as few requests as the

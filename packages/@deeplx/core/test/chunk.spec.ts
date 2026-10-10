@@ -1,7 +1,6 @@
-import { MAX_FREE_TEXT_LENGTH } from '@deeplx/core'
 import { expect, test } from 'vitest'
 
-import { chunkByLength } from '../src/chunk.ts'
+import { chunkByLength, MAX_FREE_TEXT_LENGTH } from '@deeplx/core'
 
 test('keeps a single segment in a single chunk', () => {
   expect(chunkByLength(['Hallo'])).toStrictEqual([['Hallo']])

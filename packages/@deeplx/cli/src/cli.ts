@@ -8,6 +8,7 @@ import path from 'node:path'
 import { fileURLToPath, URL } from 'node:url'
 
 import {
+  chunkByLength,
   getSharedCookies,
   translate,
   type SourceLanguage,
@@ -15,8 +16,6 @@ import {
 } from '@deeplx/core'
 import { cjsRequire } from '@pkgr/core'
 import { Option, program } from 'commander'
-
-import { chunkByLength } from './chunk.ts'
 
 export interface DeepLXCliOptions {
   target: TargetLanguage

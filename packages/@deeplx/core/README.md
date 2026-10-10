@@ -170,30 +170,22 @@ unchanged.
 The anonymous oneshot endpoint caps the **sum** of all `text` items at 1500
 characters (Unicode code points) — `sum(texts.map(text => [...text].length))` —
 and answers `400` when a request exceeds it. Both helpers validate this before
-sending and return the existing `413` error result instead:
+sending and return the existing `413` error result instead, and `chunkByLength`
+packs segments into requests that stay within it:
 
 ```js
-import { MAX_FREE_TEXT_LENGTH } from '@deeplx/core'
+import { chunkByLength, translate } from '@deeplx/core'
 
-// Chunk by total length so that every request stays within the limit.
-function chunkByLength(texts, limit = MAX_FREE_TEXT_LENGTH) {
-  const chunks = []
-  let chunk = []
-  let length = 0
-  for (const text of texts) {
-    const size = [...text].length
-    if (length + size > limit && chunk.length > 0) {
-      chunks.push(chunk)
-      chunk = []
-      length = 0
-    }
-    chunk.push(text)
-    length += size
-  }
-  if (chunk.length > 0) chunks.push(chunk)
-  return chunks
+for (const chunk of chunkByLength(document.split('\n'))) {
+  const data = await translate(chunk, 'ZH', 'EN')
+  // one translation per segment, in the same order
 }
 ```
+
+It never splits a segment, and a segment longer than the limit keeps its own
+chunk, so the call fails with the `413` result instead of silently dropping it.
+The library still sends exactly one request per call: the number of requests
+stays the caller's decision.
 
 #### A batch fails as a whole
 
