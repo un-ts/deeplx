@@ -211,16 +211,13 @@ await translate('Ring til mig!', 'german', 'danish')
 
 #### Batch translation
 
-`translateByDeepLX` also accepts an array of texts and sends them in a single
-request, returning `data` position-aligned with the input:
+`translate` also accepts an array of texts and sends them in a single request,
+returning one translation per text, in the same order:
 
 ```js
-import { translateByDeepLX } from 'deeplx'
+import { translate } from 'deeplx'
 
-const { data } = await translateByDeepLX('EN', 'ZH', [
-  'Hello world',
-  'How are you?',
-])
+const data = await translate(['Hello world', 'How are you?'], 'ZH', 'EN')
 
 // ['你好，世界', '你好吗？']
 ```

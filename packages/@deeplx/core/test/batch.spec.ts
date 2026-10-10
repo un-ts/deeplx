@@ -405,3 +405,60 @@ test('the language maps still apply to a string request', async () => {
   })
   expect(result).toMatchObject({ data: 'hello', sourceLang: 'ZH' })
 })
+
+test('the translate helper returns a string for a string input', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    translations: [{ text: 'Hello', detected_source_language: 'DE' }],
+  })
+  await setupXfetchMock(mockXfetch)
+
+  const { translate } = await import('@deeplx/core')
+  const result = await translate('Hallo', 'EN', 'DE', { skipWarm: true })
+
+  // Compile-time: a string input resolves to `string`, not `string[]`.
+  const data: string = result
+  expect(data).toBe('Hello')
+})
+
+test('the translate helper returns one string per text for an array input', async () => {
+  const texts = ['eins', 'zwei']
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    translations: [{ text: 'one' }, { text: 'two' }],
+  })
+  await setupXfetchMock(mockXfetch)
+
+  const { translate } = await import('@deeplx/core')
+  const result = await translate(texts, 'EN', 'DE', { skipWarm: true })
+
+  expect(mockXfetch).toHaveBeenCalledOnce()
+  expect(lastBody(mockXfetch)).toMatchObject({ text: texts })
+  // Compile-time: an array input resolves to `string[]`.
+  const data: string[] = result
+  expect(data).toStrictEqual(['one', 'two'])
+})
+
+test('the translate helper throws a returned error result', async () => {
+  const mockXfetch = vi
+    .fn<typeof xfetch>()
+    .mockRejectedValue(new Error('network down'))
+  await setupXfetchMock(mockXfetch)
+
+  const { translate } = await import('@deeplx/core')
+  await expect(
+    translate('Hallo', 'EN', 'DE', { skipWarm: true }),
+  ).rejects.toThrow('Error: network down')
+})
+
+test('the translate helper propagates a batch alignment failure', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    translations: [{ text: 'one' }],
+  })
+  await setupXfetchMock(mockXfetch)
+
+  const { translate } = await import('@deeplx/core')
+  await expect(
+    translate(['eins', 'zwei'], 'EN', 'DE', { skipWarm: true }),
+  ).rejects.toThrow(
+    'translation count mismatch: expected 2 translations, got 1',
+  )
+})

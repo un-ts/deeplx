@@ -146,34 +146,31 @@ await translate('Hello World', 'ZH', 'EN', {
 
 ### Batch translation
 
-`translateByDeepLX` accepts `string | readonly string[]`. An array is sent as a
-single oneshot request whose `text` is that array, and `data` comes back
-position-aligned — one translation per requested text, in the same order — so a
-document of `n` segments costs one request instead of `n`:
+`translate` accepts `string | readonly string[]`, as does `translateByDeepLX`
+(which additionally returns the whole result). An array is sent as a single
+oneshot request whose `text` is that array, and one translation comes back per
+requested text, in the same order — so a document of `n` segments costs one
+request instead of `n`:
 
 ```js
-import { translateByDeepLX } from '@deeplx/core'
+import { translate } from '@deeplx/core'
 
-const result = await translateByDeepLX('EN', 'ZH', [
-  'Hello world',
-  'How are you?',
-])
+const data = await translate(['Hello world', 'How are you?'], 'ZH', 'EN')
 
-if ('message' in result) throw new Error(result.message, { cause: result })
-
-// result.data[i] is the translation of the i-th input text:
+// data[i] is the translation of the i-th input text:
 // ['你好，世界', '你好吗？']
 ```
 
-A string argument keeps its previous shape exactly: `data` is a `string`, and the
-request body, the response fields and the error results are unchanged.
+A string argument keeps its previous shape exactly: the resolved value is a
+`string`, and the request body, the response fields and the error results are
+unchanged.
 
 #### Chunk by total length, not by segment count
 
 The anonymous oneshot endpoint caps the **sum** of all `text` items at 1500
 characters (Unicode code points) — `sum(texts.map(text => [...text].length))` —
-and answers `400` when a request exceeds it. `translateByDeepLX` validates this
-before sending and returns the existing `413` error result instead:
+and answers `400` when a request exceeds it. Both helpers validate this before
+sending and return the existing `413` error result instead:
 
 ```js
 import { MAX_FREE_TEXT_LENGTH } from '@deeplx/core'
@@ -204,9 +201,9 @@ A batch either succeeds with one translation per text or fails entirely: an empt
 array throws, and a response whose `translations` length differs from the
 requested texts throws too, rather than returning placeholders or misaligned
 data. The thrown `Error` carries the library's error result as its `cause`.
-Transport and endpoint errors are still returned as error results, exactly as for
-a string input. `translate` keeps its single-text signature — call
-`translateByDeepLX` directly for a batch.
+Transport and endpoint errors are still returned as error results by
+`translateByDeepLX`, and thrown as an `Error` by `translate`, exactly as for a
+string input.
 
 ## Sponsors and Backers
 

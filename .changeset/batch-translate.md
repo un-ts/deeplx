@@ -6,10 +6,11 @@
 
 feat: translate many texts in a single oneshot request
 
-`translateByDeepLX` now accepts `text: string | readonly string[]`. An array is
-sent as one oneshot request whose `text` is that array, and the result's `data`
-is a position-aligned `string[]` (`DeepLXBatchTranslationResult`); a string
-argument keeps the previous request, response and error shapes exactly.
+`translate` and `translateByDeepLX` now accept `text: string | readonly
+string[]`. An array is sent as one oneshot request whose `text` is that array:
+`translate` resolves to a position-aligned `string[]`, and `translateByDeepLX`
+to a result whose `data` is that `string[]` (`DeepLXBatchTranslationResult`). A
+string argument keeps the previous request, response and error shapes exactly.
 
 The anonymous oneshot endpoint caps the **sum** of all `text` items at 1500
 characters, so callers must chunk a document by total length rather than by

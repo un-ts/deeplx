@@ -9,7 +9,7 @@ import { fileURLToPath, URL } from 'node:url'
 
 import {
   getSharedCookies,
-  translateByDeepLX,
+  translate,
   type SourceLanguage,
   type TargetLanguage,
 } from '@deeplx/core'
@@ -145,20 +145,13 @@ program
     // the segments are batched by total length, not by segment count.
     const translated: string[] = []
     for (const chunk of chunkByLength(segments)) {
-      const result = await translateByDeepLX(
-        source,
-        target,
-        chunk,
-        proxy,
+      const data = await translate(chunk, target, source, {
         dlSession,
-        undefined,
-        resolvedSkipWarm,
-        resolvedCookies,
-      )
-      if ('message' in result) {
-        throw new Error(result.message, { cause: result })
-      }
-      translated.push(...result.data)
+        proxyUrl: proxy,
+        skipWarm: resolvedSkipWarm,
+        cookies: resolvedCookies,
+      })
+      translated.push(...data)
     }
 
     // Persist cookies for future invocations
