@@ -1,6 +1,7 @@
 ---
 "@deeplx/cli": minor
 "@deeplx/core": minor
+"deeplx": minor
 ---
 
 feat: translate many texts in a single oneshot request
@@ -24,4 +25,6 @@ misaligned data.
 The CLI is aligned on top of it: `--text` and `--file` are repeatable, every
 value is a segment of one batch, and `deeplx` chunks those segments by total
 length, so one invocation translates a whole document in as few requests as the
-limit allows and prints one translation per segment, in order.
+limit allows and prints one translation per segment, in order. The all-in-one
+`deeplx` package re-exports the library and the CLI, so it carries the same
+feature with a matching bump.
