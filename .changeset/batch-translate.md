@@ -18,10 +18,10 @@ segment count. `translateByDeepLX` checks that limit locally and resolves to the
 existing 413 error result instead of letting DeepL answer 400.
 
 A batch either succeeds with one translation per text or fails as a whole: an
-empty array, and a response whose `translations` length does not line up with the
-requested texts, throw an `Error` carrying the library's
-`DeepLXTranslationErrorResult` as `cause`, instead of returning placeholders or
-misaligned data.
+empty array, an array holding an empty text (the message names its index), and a
+response whose `translations` length does not line up with the requested texts
+throw an `Error` carrying the library's `DeepLXTranslationErrorResult` as
+`cause`, instead of returning placeholders or misaligned data.
 
 The CLI is aligned on top of it: `--text` and `--file` are repeatable, every
 value is a segment of one batch, and `deeplx` chunks those segments by total

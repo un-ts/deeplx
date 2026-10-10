@@ -462,3 +462,29 @@ test('the translate helper propagates a batch alignment failure', async () => {
     'translation count mismatch: expected 2 translations, got 1',
   )
 })
+
+test('a batch with a blank item is rejected before any request is made', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>()
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  const error = await rejectedError(
+    translateByDeepLX(
+      'DE',
+      'EN',
+      ['eins', '', 'drei'],
+      undefined,
+      undefined,
+      undefined,
+      true,
+    ),
+  )
+
+  const message = 'No text to translate at index 1'
+  expect(error.message).toBe(message)
+  expect(causeOf(error)).toEqual({
+    code: HTTP_STATUS_NOT_FOUND,
+    message,
+  })
+  expect(mockXfetch).not.toHaveBeenCalled()
+})

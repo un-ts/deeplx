@@ -245,6 +245,28 @@ function processTranslationResponse(
   }
 }
 
+/**
+ * A blank text is not a translation request, exactly like a blank string input.
+ * A batch has to reject it up front: sending it would fail the whole batch later
+ * without naming which segment the caller has to fix.
+ */
+function assertBatchTexts(texts: readonly string[]): void {
+  // An empty batch has no position to return a translation for; fail the whole
+  // call instead of resolving to a success with an empty array.
+  if (texts.length === 0) {
+    throw new Error('No text to translate', {
+      cause: { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' },
+    })
+  }
+  const blankIndex = texts.findIndex(item => !item)
+  if (blankIndex !== -1) {
+    const message = `No text to translate at index ${blankIndex}`
+    throw new Error(message, {
+      cause: { code: HTTP_STATUS_NOT_FOUND, message },
+    })
+  }
+}
+
 export function translateByDeepLX(
   sourceLang: SourceLanguage | undefined,
   targetLang: TargetLanguage,
@@ -281,13 +303,7 @@ export async function translateByDeepLX(
   const texts = typeof text === 'string' ? [text] : [...text]
 
   if (isBatch) {
-    // An empty batch has no position to return a translation for; fail the
-    // whole call instead of resolving to a success with an empty array.
-    if (texts.length === 0) {
-      throw new Error('No text to translate', {
-        cause: { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' },
-      })
-    }
+    assertBatchTexts(texts)
   } else if (!text) {
     return { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' }
   }

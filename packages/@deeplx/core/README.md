@@ -198,12 +198,13 @@ function chunkByLength(texts, limit = MAX_FREE_TEXT_LENGTH) {
 #### A batch fails as a whole
 
 A batch either succeeds with one translation per text or fails entirely: an empty
-array throws, and a response whose `translations` length differs from the
-requested texts throws too, rather than returning placeholders or misaligned
-data. The thrown `Error` carries the library's error result as its `cause`.
-Transport and endpoint errors are still returned as error results by
-`translateByDeepLX`, and thrown as an `Error` by `translate`, exactly as for a
-string input.
+array throws, and so does an array holding an empty text (the message names the
+index) because a blank segment is not a translation request. A response whose
+`translations` length differs from the requested texts throws too, rather than
+returning placeholders or misaligned data. The thrown `Error` carries the
+library's error result as its `cause`. Transport and endpoint errors are still
+returned as error results by `translateByDeepLX`, and thrown as an `Error` by
+`translate`, exactly as for a string input.
 
 ## Sponsors and Backers
 
