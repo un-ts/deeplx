@@ -26,9 +26,11 @@ import {
 } from './constants.ts'
 import type {
   DeepLXBatchTranslationResult,
+  DeepLXTranslationErrorResult,
   DeepLXTranslationResult,
   OneshotRequest,
   OneshotResponse,
+  OneshotTranslation,
 } from './types.ts'
 import { abbreviateLanguage } from './utils.ts'
 
@@ -189,6 +191,33 @@ function buildHeaders(
   return headers
 }
 
+/** The result both the single-text and the batch path use for a broken answer. */
+function failedTranslation(reqId: number): DeepLXTranslationResult<string[]> {
+  return {
+    code: HTTP_STATUS_SERVICE_UNAVAILABLE,
+    id: reqId,
+    message: 'Translation failed',
+  }
+}
+
+/**
+ * A batch response has to line up one-to-one with the request: a missing, short
+ * or long `translations` array would silently shift every later segment, so the
+ * whole call fails instead of returning misaligned data.
+ */
+function assertAligned(
+  translations: readonly OneshotTranslation[] | undefined,
+  textCount: number,
+): void {
+  if (translations?.length !== textCount) {
+    const count = translations?.length ?? 0
+    const message = `translation count mismatch: expected ${textCount} translations, got ${count}`
+    throw new Error(message, {
+      cause: { code: HTTP_STATUS_SERVICE_UNAVAILABLE, message },
+    })
+  }
+}
+
 function processTranslationResponse(
   response: OneshotResponse | null,
   reqId: number,
@@ -200,24 +229,14 @@ function processTranslationResponse(
 ): DeepLXTranslationResult<string[]> {
   const translations = response?.translations
 
-  // A batch response has to line up one-to-one with the request: a missing,
-  // short or long `translations` array would silently shift every later
-  // segment, so the whole call fails instead of returning misaligned data.
-  if (aligned && translations?.length !== textCount) {
-    const message = `translation count mismatch: expected ${textCount} translations, got ${translations?.length ?? 0}`
-    throw new Error(message, {
-      cause: { code: HTTP_STATUS_SERVICE_UNAVAILABLE, message },
-    })
+  if (aligned) {
+    assertAligned(translations, textCount)
   }
 
   // A single text keeps resolving to the service-unavailable result when the
   // endpoint answers without any translation at all.
-  if (!translations || translations.length === 0) {
-    return {
-      code: HTTP_STATUS_SERVICE_UNAVAILABLE,
-      id: reqId,
-      message: 'Translation failed',
-    }
+  if (!translations?.length) {
+    return failedTranslation(reqId)
   }
 
   // A single text keeps reading only the first translation, exactly as before;
@@ -226,11 +245,7 @@ function processTranslationResponse(
     .slice(0, textCount)
     .map(translation => translation.text)
   if (data.some(translation => !translation)) {
-    return {
-      code: HTTP_STATUS_SERVICE_UNAVAILABLE,
-      id: reqId,
-      message: 'Translation failed',
-    }
+    return failedTranslation(reqId)
   }
 
   const mainTranslation = translations[0]
@@ -307,6 +322,67 @@ function restoreBlankSegments(
   })
 }
 
+/**
+ * The endpoint caps the *sum* of all `text` items in one request. The count is
+ * in UTF-16 code units (`String.prototype.length`), not code points: probed
+ * live, 750 emoji (1500 units) is accepted while 751 (1502 units) is a 400, and
+ * 2400-byte CJK text is accepted, so neither bytes, code points nor display
+ * columns are the unit.
+ */
+function lengthError(
+  totalLength: number,
+  textCount: number,
+  isBatch: boolean,
+): DeepLXTranslationErrorResult | undefined {
+  if (totalLength <= MAX_FREE_TEXT_LENGTH) {
+    return undefined
+  }
+  return {
+    code: HTTP_STATUS_PAYLOAD_TOO_LARGE, // Payload Too Large
+    message: isBatch
+      ? `texts exceed maximum total length: ${totalLength} characters across ${textCount} texts (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units per request)`
+      : `text exceeds maximum length: ${totalLength} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units)`,
+  }
+}
+
+/** Resolve both languages, or the error the caller has to return. */
+function resolveLanguages(
+  sourceLang: SourceLanguage | undefined,
+  targetLang: TargetLanguage,
+): { error: string } | { source?: string; target: string } {
+  const targetResult = resolveLang(targetLang, 'target')
+  if (!targetResult.success) {
+    return { error: targetResult.error }
+  }
+  const sourceResult = resolveLang(sourceLang, 'source')
+  if (!sourceResult.success) {
+    return { error: sourceResult.error }
+  }
+  return { source: sourceResult.value, target: targetResult.value }
+}
+
+/**
+ * A single-text caller keeps the original `data: string` shape; a batch whose
+ * payload skipped blank segments gets those positions back.
+ */
+function finalizeResult(
+  result: DeepLXTranslationResult<string[]>,
+  texts: readonly string[],
+  payload: readonly string[],
+  isBatch: boolean,
+): DeepLXBatchTranslationResult | DeepLXTranslationResult {
+  if (!('data' in result)) {
+    return result
+  }
+  if (!isBatch) {
+    return { ...result, data: result.data[0] }
+  }
+  if (payload.length === texts.length) {
+    return result
+  }
+  return { ...result, data: restoreBlankSegments(texts, result.data) }
+}
+
 export function translateByDeepLX(
   sourceLang: SourceLanguage | undefined,
   targetLang: TargetLanguage,
@@ -354,19 +430,10 @@ export async function translateByDeepLX(
 
   // The anonymous oneshot endpoint caps the *sum* of all `text` items, so a
   // batch has to be chunked by total length, not by segment count.
-  //
-  // The endpoint counts UTF-16 code units (`String.prototype.length`), not code
-  // points: probed live, 750 emoji (1500 units) is accepted while 751 (1502
-  // units) is a 400, and 2400-byte CJK text is accepted, so neither bytes nor
-  // code points nor display columns are the unit. Keep `item.length`.
   const totalLength = payload.reduce((length, item) => length + item.length, 0)
-  if (totalLength > MAX_FREE_TEXT_LENGTH) {
-    return {
-      code: HTTP_STATUS_PAYLOAD_TOO_LARGE, // Payload Too Large
-      message: isBatch
-        ? `texts exceed maximum total length: ${totalLength} characters across ${texts.length} texts (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units per request)`
-        : `text exceeds maximum length: ${totalLength} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units)`,
-    }
+  const tooLong = lengthError(totalLength, texts.length, isBatch)
+  if (tooLong) {
+    return tooLong
   }
 
   const requestCookies = await resolveRequestCookies(
@@ -376,20 +443,15 @@ export async function translateByDeepLX(
     skipWarm,
   )
 
-  const targetResult = resolveLang(targetLang, 'target')
-  if (!targetResult.success) {
-    return { code: HTTP_STATUS_BAD_REQUEST, message: targetResult.error }
-  }
-
-  const sourceResult = resolveLang(sourceLang, 'source')
-  if (!sourceResult.success) {
-    return { code: HTTP_STATUS_BAD_REQUEST, message: sourceResult.error }
+  const languages = resolveLanguages(sourceLang, targetLang)
+  if ('error' in languages) {
+    return { code: HTTP_STATUS_BAD_REQUEST, message: languages.error }
   }
 
   const reqData: OneshotRequest = {
     text: payload,
-    target_lang: targetResult.value,
-    source_lang: sourceResult.value,
+    target_lang: languages.target,
+    source_lang: languages.source,
     usage_type: 'translate',
     app_information: {
       os: 'iOS',
@@ -420,28 +482,18 @@ export async function translateByDeepLX(
 
   // Deliberately outside the transport `try`: a misaligned batch throws instead
   // of being reported as a request failure.
-  const result = processTranslationResponse(
-    response,
-    reqId,
-    sourceLang,
-    targetLang,
-    dlSession,
-    payload.length,
+  return finalizeResult(
+    processTranslationResponse(
+      response,
+      reqId,
+      sourceLang,
+      targetLang,
+      dlSession,
+      payload.length,
+      isBatch,
+    ),
+    texts,
+    payload,
     isBatch,
   )
-
-  if (!('data' in result)) {
-    return result
-  }
-
-  // A single-text caller keeps the original `data: string` shape.
-  if (!isBatch) {
-    return { ...result, data: result.data[0] }
-  }
-
-  if (payload.length === texts.length) {
-    return result
-  }
-
-  return { ...result, data: restoreBlankSegments(texts, result.data) }
 }
