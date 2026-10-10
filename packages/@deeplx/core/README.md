@@ -177,13 +177,9 @@ throws it. `chunkByLength` packs segments into requests that stay within it:
 ```js
 import { chunkByLength, translate } from '@deeplx/core'
 
-// A blank segment is rejected, so drop blank lines before chunking; keep the
-// original index if the translations have to be mapped back to the document.
-const lines = document.split('\n').filter(line => line.trim() !== '')
-
-for (const chunk of chunkByLength(lines)) {
+for (const chunk of chunkByLength(document.split('\n'))) {
   const data = await translate(chunk, 'ZH', 'EN')
-  // one translation per segment, in the same order
+  // one translation per segment, in the same order; empty lines stay empty
 }
 ```
 
@@ -195,13 +191,12 @@ stays the caller's decision.
 #### A batch fails as a whole
 
 A batch either succeeds with one translation per text or fails entirely: an empty
-array throws, and so does an array holding an empty text (the message names the
-index) because a blank segment is not a translation request. A response whose
+array (or a batch whose segments are all blank) throws, and a response whose
 `translations` length differs from the requested texts throws too, rather than
-returning placeholders or misaligned data. The thrown `Error` carries the
-library's error result as its `cause`. Transport and endpoint errors are still
-returned as error results by `translateByDeepLX`, and thrown as an `Error` by
-`translate`, exactly as for a string input.
+returning placeholders or misaligned data. A blank segment (empty or whitespace-only) among non-blank ones is not a failure and is not sent either: it is answered locally with its own text, so the positions of a segmented document stay aligned. The thrown `Error` carries the library's error result as its `cause`.
+Transport and endpoint errors are still returned as error results by
+`translateByDeepLX`, and thrown as an `Error` by `translate`, exactly as for a
+string input (a single whitespace-only string is still sent, as before).
 
 ## Sponsors and Backers
 

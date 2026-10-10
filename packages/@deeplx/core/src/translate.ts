@@ -250,25 +250,61 @@ function processTranslationResponse(
 }
 
 /**
- * A blank text is not a translation request, exactly like a blank string input.
- * A batch has to reject it up front: sending it would fail the whole batch later
- * without naming which segment the caller has to fix.
+ * Cookies for one request: explicit ones win, a Pro session or an explicit
+ * `skipWarm` avoids the warm-up, and everything else warms the shared jar first.
  */
-function assertBatchTexts(texts: readonly string[]): void {
-  // An empty batch has no position to return a translation for; fail the whole
-  // call instead of resolving to a success with an empty array.
-  if (texts.length === 0) {
+async function resolveRequestCookies(
+  cookies: string | undefined,
+  dlSession: string | undefined,
+  proxyUrl: string | undefined,
+  skipWarm: boolean | undefined,
+): Promise<string | undefined> {
+  if (cookies || dlSession || skipWarm) {
+    return cookies
+  }
+  await warmCookies(proxyUrl)
+  return sharedCookies
+}
+
+/**
+ * A batch needs at least one translatable text to ask the endpoint about. An
+ * empty array, or one whose segments are all blank, has nothing to translate,
+ * so the call fails as a whole instead of resolving to a success nobody
+ * requested.
+ *
+ * A blank segment (empty or whitespace-only) is not rejected, and it is not
+ * sent either: `restoreBlankSegments` answers it locally with the original
+ * text — the translation of whitespace is that whitespace — which keeps the
+ * positions of a segmented document aligned and spares the endpoint a segment
+ * with nothing to translate.
+ */
+function batchPayload(texts: readonly string[]): string[] {
+  if (texts.every(value => value.trim() === '')) {
     throw new Error('No text to translate', {
       cause: { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' },
     })
   }
-  const blankIndex = texts.findIndex(item => !item)
-  if (blankIndex !== -1) {
-    const message = `No text to translate at index ${blankIndex}`
-    throw new Error(message, {
-      cause: { code: HTTP_STATUS_NOT_FOUND, message },
-    })
-  }
+  return texts.filter(value => value.trim() !== '')
+}
+
+/**
+ * The blank segments were never sent, so put them back where they came from —
+ * unchanged, since there is nothing to translate in them — and keep the
+ * translated segments in order.
+ */
+function restoreBlankSegments(
+  texts: readonly string[],
+  data: readonly string[],
+): string[] {
+  let sent = 0
+  return texts.map(value => {
+    if (value.trim() === '') {
+      return value
+    }
+    const translation = data[sent]
+    sent += 1
+    return translation
+  })
 }
 
 export function translateByDeepLX(
@@ -306,9 +342,13 @@ export async function translateByDeepLX(
   // and the failure modes differ between the two.
   const texts = typeof text === 'string' ? [text] : [...text]
 
-  if (isBatch) {
-    assertBatchTexts(texts)
-  } else if (!text) {
+  // A blank segment is not a request: it is answered locally with its own text
+  // (there is nothing to translate in it), so the positions of a segmented
+  // document stay aligned and the endpoint is only asked about real text. A
+  // single empty string keeps its own "no text to translate" result below.
+  const payload = isBatch ? batchPayload(texts) : texts
+
+  if (!isBatch && !text) {
     return { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' }
   }
 
@@ -319,7 +359,7 @@ export async function translateByDeepLX(
   // points: probed live, 750 emoji (1500 units) is accepted while 751 (1502
   // units) is a 400, and 2400-byte CJK text is accepted, so neither bytes nor
   // code points nor display columns are the unit. Keep `item.length`.
-  const totalLength = texts.reduce((length, item) => length + item.length, 0)
+  const totalLength = payload.reduce((length, item) => length + item.length, 0)
   if (totalLength > MAX_FREE_TEXT_LENGTH) {
     return {
       code: HTTP_STATUS_PAYLOAD_TOO_LARGE, // Payload Too Large
@@ -329,11 +369,12 @@ export async function translateByDeepLX(
     }
   }
 
-  let requestCookies = cookies
-  if (!requestCookies && !dlSession && !skipWarm) {
-    await warmCookies(proxyUrl)
-    requestCookies = sharedCookies
-  }
+  const requestCookies = await resolveRequestCookies(
+    cookies,
+    dlSession,
+    proxyUrl,
+    skipWarm,
+  )
 
   const targetResult = resolveLang(targetLang, 'target')
   if (!targetResult.success) {
@@ -346,7 +387,7 @@ export async function translateByDeepLX(
   }
 
   const reqData: OneshotRequest = {
-    text: texts,
+    text: payload,
     target_lang: targetResult.value,
     source_lang: sourceResult.value,
     usage_type: 'translate',
@@ -385,14 +426,22 @@ export async function translateByDeepLX(
     sourceLang,
     targetLang,
     dlSession,
-    texts.length,
+    payload.length,
     isBatch,
   )
 
-  if (isBatch || !('data' in result)) {
+  if (!('data' in result)) {
     return result
   }
 
   // A single-text caller keeps the original `data: string` shape.
-  return { ...result, data: result.data[0] }
+  if (!isBatch) {
+    return { ...result, data: result.data[0] }
+  }
+
+  if (payload.length === texts.length) {
+    return result
+  }
+
+  return { ...result, data: restoreBlankSegments(texts, result.data) }
 }

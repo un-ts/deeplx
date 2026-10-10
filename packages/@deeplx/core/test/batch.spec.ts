@@ -463,7 +463,57 @@ test('the translate helper propagates a batch alignment failure', async () => {
   )
 })
 
-test('a batch with a blank item is rejected before any request is made', async () => {
+test('a blank segment is answered locally with its own text', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    translations: [{ text: 'one' }, { text: 'three' }],
+  })
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  const result = await translateByDeepLX(
+    'DE',
+    'EN',
+    ['eins', '', '   ', 'drei'],
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+
+  // The blank segments are not sent, but they keep their positions: the empty
+  // one stays empty and the whitespace one keeps its own text (which is what
+  // the endpoint returns for whitespace anyway).
+  expect(mockXfetch).toHaveBeenCalledOnce()
+  expect(lastBody(mockXfetch)).toMatchObject({ text: ['eins', 'drei'] })
+  expect(result).toMatchObject({
+    code: 200,
+    data: ['one', '', '   ', 'three'],
+  })
+})
+
+test('empty segments at either end keep their positions', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    translations: [{ text: 'one' }],
+  })
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  const result = await translateByDeepLX(
+    'DE',
+    'EN',
+    ['', 'eins', ''],
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+
+  expect(mockXfetch).toHaveBeenCalledOnce()
+  expect(lastBody(mockXfetch)).toMatchObject({ text: ['eins'] })
+  expect(result).toMatchObject({ code: 200, data: ['', 'one', ''] })
+})
+
+test('a batch whose segments are all blank is rejected', async () => {
   const mockXfetch = vi.fn<typeof xfetch>()
   await setupXfetchMock(mockXfetch)
 
@@ -472,7 +522,7 @@ test('a batch with a blank item is rejected before any request is made', async (
     translateByDeepLX(
       'DE',
       'EN',
-      ['eins', '', 'drei'],
+      ['', '   ', '\t\n'],
       undefined,
       undefined,
       undefined,
@@ -480,11 +530,10 @@ test('a batch with a blank item is rejected before any request is made', async (
     ),
   )
 
-  const message = 'No text to translate at index 1'
-  expect(error.message).toBe(message)
+  expect(error.message).toBe('No text to translate')
   expect(causeOf(error)).toEqual({
     code: HTTP_STATUS_NOT_FOUND,
-    message,
+    message: 'No text to translate',
   })
   expect(mockXfetch).not.toHaveBeenCalled()
 })
@@ -584,4 +633,28 @@ test('a string response with no translations still resolves to the 503 result', 
     code: HTTP_STATUS_SERVICE_UNAVAILABLE,
     message: 'Translation failed',
   })
+})
+
+test('a whitespace-only string is still sent, as before', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    translations: [{ text: '   ' }],
+  })
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  // The single-text path keeps its previous request shape, and the endpoint
+  // echoes whitespace back unchanged.
+  const result = await translateByDeepLX(
+    'DE',
+    'EN',
+    '   ',
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+
+  expect(mockXfetch).toHaveBeenCalledOnce()
+  expect(lastBody(mockXfetch)).toMatchObject({ text: ['   '] })
+  expect(result).toMatchObject({ code: 200, data: '   ' })
 })

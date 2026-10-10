@@ -21,10 +21,9 @@ must chunk a document by total length rather than by segment count.
 error result instead of letting DeepL answer 400.
 
 A batch either succeeds with one translation per text or fails as a whole: an
-empty array, an array holding an empty text (the message names its index), and a
-response whose `translations` length does not line up with the requested texts
-throw an `Error` carrying the library's `DeepLXTranslationErrorResult` as
-`cause`, instead of returning placeholders or misaligned data.
+empty array (or a batch whose segments are all blank), and a response whose
+`translations` length does not line up with the requested texts, throw an
+`Error` carrying the library's `DeepLXTranslationErrorResult` as `cause`. A blank segment (empty or whitespace-only) among non-blank ones is answered locally with its own text and only the non-blank segments are sent, so a segmented document keeps its positions without the caller filtering anything.
 
 `chunkByLength` is exported so that a caller can split a document into requests
 that stay within the limit without copying the packing rule out of the README; it
