@@ -1,4 +1,5 @@
 ---
+"@deeplx/cli": minor
 "@deeplx/core": minor
 ---
 
@@ -19,3 +20,8 @@ empty array, and a response whose `translations` length does not line up with th
 requested texts, throw an `Error` carrying the library's
 `DeepLXTranslationErrorResult` as `cause`, instead of returning placeholders or
 misaligned data.
+
+The CLI is aligned on top of it: `--text` and `--file` are repeatable, every
+value is a segment of one batch, and `deeplx` chunks those segments by total
+length, so one invocation translates a whole document in as few requests as the
+limit allows and prints one translation per segment, in order.

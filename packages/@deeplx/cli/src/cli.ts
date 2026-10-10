@@ -9,18 +9,20 @@ import { fileURLToPath, URL } from 'node:url'
 
 import {
   getSharedCookies,
-  translate,
+  translateByDeepLX,
   type SourceLanguage,
   type TargetLanguage,
 } from '@deeplx/core'
 import { cjsRequire } from '@pkgr/core'
 import { Option, program } from 'commander'
 
+import { chunkByLength } from './chunk.ts'
+
 export interface DeepLXCliOptions {
   target: TargetLanguage
   source?: SourceLanguage
-  text?: string
-  file?: string
+  text?: string[]
+  file?: string[]
   dlSession?: string
   proxy?: string
   skipWarm?: boolean
@@ -64,6 +66,11 @@ async function saveCookieCache(cookies: string): Promise<void> {
   }
 }
 
+/** Collect the values of a repeatable option, in the order they were given. */
+function collect(value: string, previous: string[] | undefined): string[] {
+  return previous ? [...previous, value] : [value]
+}
+
 const { version, description } = cjsRequire<{
   version: string
   description: string
@@ -75,8 +82,16 @@ program
   .description(description)
   .option('-s, --source <text>', 'Source language of your text')
   .requiredOption('-t, --target <text>', 'Target language of your desired text')
-  .option('--text <text>', 'Text to be translated')
-  .option('-f, --file <path>', 'File to be translated')
+  .option(
+    '--text <text>',
+    'Text to be translated, repeatable: every value is a segment of one batch',
+    collect,
+  )
+  .option(
+    '-f, --file <path>',
+    'File to be translated, repeatable: every file is a segment of one batch',
+    collect,
+  )
   .addOption(
     new Option(
       '--dl-session <cookie>',
@@ -90,8 +105,11 @@ program
     const { source, target, text, file, dlSession, proxy, skipWarm, cookie } =
       this.opts<DeepLXCliOptions>()
 
-    const isTextNil = text == null || text.trim() === ''
-    const isFileNil = file == null || file.trim() === ''
+    // A blank value means "not given", as it did for the single-value options.
+    const texts = (text ?? []).filter(value => value.trim() !== '')
+    const files = (file ?? []).filter(value => value.trim() !== '')
+    const isTextNil = texts.length === 0
+    const isFileNil = files.length === 0
 
     if (isTextNil && isFileNil) {
       throw new Error('One of `text` or `file` option must be specified')
@@ -102,6 +120,11 @@ program
         'Both `text` and `file` options provided, `text` will take precedence',
       )
     }
+
+    // Every value is one segment, and the output follows this order.
+    const segments = isTextNil
+      ? await Promise.all(files.map(value => fs.readFile(value, 'utf8')))
+      : texts
 
     // Resolve cookies to use: explicit --cookie flag > cache > warmup
     let resolvedCookies: string | undefined
@@ -118,17 +141,25 @@ program
       }
     }
 
-    const translated = await translate(
-      isTextNil ? await fs.readFile(file!, 'utf8') : text,
-      target,
-      source,
-      {
+    // One request per chunk: the endpoint caps the *sum* of all text items, so
+    // the segments are batched by total length, not by segment count.
+    const translated: string[] = []
+    for (const chunk of chunkByLength(segments)) {
+      const result = await translateByDeepLX(
+        source,
+        target,
+        chunk,
+        proxy,
         dlSession,
-        proxyUrl: proxy,
-        skipWarm: resolvedSkipWarm,
-        cookies: resolvedCookies,
-      },
-    )
+        undefined,
+        resolvedSkipWarm,
+        resolvedCookies,
+      )
+      if ('message' in result) {
+        throw new Error(result.message, { cause: result })
+      }
+      translated.push(...result.data)
+    }
 
     // Persist cookies for future invocations
     if (!dlSession) {
@@ -138,7 +169,8 @@ program
       }
     }
 
-    console.log(translated)
+    // One line per segment, in the order they were given.
+    console.log(translated.join('\n'))
   })
   .parseAsync(process.argv)
   // eslint-disable-next-line unicorn-x/prefer-top-level-await

@@ -25,6 +25,7 @@ The cli for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/package
   - [Help](#help)
   - [Example 1](#example-1)
   - [Example 2](#example-2)
+  - [Example 3](#example-3)
 - [Sponsors and Backers](#sponsors-and-backers)
   - [Sponsors](#sponsors)
   - [Backers](#backers)
@@ -117,10 +118,14 @@ Options:
   -V, --version          output the version number
   -s, --source <text>    Source language of your text
   -t, --target <text>    Target language of your desired text
-  --text <text>          Text to be translated
-  -f, --file <path>      File to be translated
+  --text <text>          Text to be translated, repeatable: every value is a
+                         segment of one batch
+  -f, --file <path>      File to be translated, repeatable: every file is a
+                         segment of one batch
   --dl-session <cookie>  DeepL Pro session cookie (dl_session) (env: DL_SESSION)
   --proxy <url>          Proxy URL for the request
+  --skip-warm            Skip the warmup cookie fetch
+  --cookie <value>       Provide cookies directly (skips warmup fetch)
   -h, --help             display help for command
 ```
 
@@ -145,6 +150,26 @@ This will translate the file (`test.txt`) text from Italian (`IT`) into Portugue
 ```sh
 deeplx -t PT -f test.txt
 ```
+
+### Example 3
+
+Repeat `--text` (or `--file`) to translate several texts as one batch. One
+translation is printed per segment, in the order they were given:
+
+```sh
+deeplx -t ZH --text "Hello world" --text "How are you?"
+```
+
+```text
+你好，世界
+你好吗？
+```
+
+The anonymous oneshot endpoint caps the **sum** of all `text` items at 1500
+characters per request, so a longer batch is split into as few requests as that
+limit allows — `deeplx` chunks by total length, never by segment count. See
+[`@deeplx/core`](../core/README.md#batch-translation) for the limit and the
+chunking rule.
 
 ## Sponsors and Backers
 

@@ -1,7 +1,7 @@
 [
   {
     "path": "./packages/@deeplx/cli/lib/cli.js",
-    "limit": "1.15kB"
+    "limit": "1.4kB"
   },
   {
     "path": "./packages/@deeplx/core/lib/index.js",
