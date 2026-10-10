@@ -25,6 +25,7 @@ import {
   type TargetLanguage,
 } from './constants.ts'
 import type {
+  DeepLXBatchTranslationResult,
   DeepLXTranslationResult,
   OneshotRequest,
   OneshotResponse,
@@ -193,8 +194,10 @@ function processTranslationResponse(
   reqId: number,
   sourceLang: SourceLanguage | undefined,
   targetLang: TargetLanguage,
-  dlSession?: string,
-): DeepLXTranslationResult {
+  dlSession: string | undefined,
+  textCount: number,
+  aligned: boolean,
+): DeepLXTranslationResult<string[]> {
   if (!response?.translations || response.translations.length === 0) {
     return {
       code: HTTP_STATUS_SERVICE_UNAVAILABLE,
@@ -203,8 +206,22 @@ function processTranslationResponse(
     }
   }
 
-  const mainTranslation = response.translations[0]
-  if (!mainTranslation.text) {
+  // A batch response has to line up one-to-one with the request: a short or
+  // long `translations` array would silently shift every later segment, so the
+  // whole call fails instead of returning misaligned data.
+  if (aligned && response.translations.length !== textCount) {
+    const message = `translation count mismatch: expected ${textCount} translations, got ${response.translations.length}`
+    throw new Error(message, {
+      cause: { code: HTTP_STATUS_SERVICE_UNAVAILABLE, message },
+    })
+  }
+
+  // A single text keeps reading only the first translation, exactly as before;
+  // a batch must not hold a placeholder for a segment DeepL did not translate.
+  const data = response.translations
+    .slice(0, textCount)
+    .map(translation => translation.text)
+  if (data.some(translation => !translation)) {
     return {
       code: HTTP_STATUS_SERVICE_UNAVAILABLE,
       id: reqId,
@@ -212,6 +229,7 @@ function processTranslationResponse(
     }
   }
 
+  const mainTranslation = response.translations[0]
   const detectedLang = mainTranslation.detected_source_language
     ? (mainTranslation.detected_source_language.toUpperCase() as SourceLanguage)
     : sourceLang || 'auto'
@@ -219,7 +237,7 @@ function processTranslationResponse(
   return {
     code: HTTP_STATUS_OK,
     id: reqId,
-    data: mainTranslation.text,
+    data,
     alternatives: [],
     sourceLang: detectedLang,
     targetLang,
@@ -227,7 +245,7 @@ function processTranslationResponse(
   }
 }
 
-export const translateByDeepLX = async (
+export function translateByDeepLX(
   sourceLang: SourceLanguage | undefined,
   targetLang: TargetLanguage,
   text: string,
@@ -236,15 +254,56 @@ export const translateByDeepLX = async (
   signal?: AbortSignal,
   skipWarm?: boolean,
   cookies?: string,
-): Promise<DeepLXTranslationResult> => {
-  if (!text) {
+): Promise<DeepLXTranslationResult>
+export function translateByDeepLX(
+  sourceLang: SourceLanguage | undefined,
+  targetLang: TargetLanguage,
+  text: readonly string[],
+  proxyUrl?: string,
+  dlSession?: string,
+  signal?: AbortSignal,
+  skipWarm?: boolean,
+  cookies?: string,
+): Promise<DeepLXBatchTranslationResult>
+export async function translateByDeepLX(
+  sourceLang: SourceLanguage | undefined,
+  targetLang: TargetLanguage,
+  text: string | readonly string[],
+  proxyUrl?: string,
+  dlSession?: string,
+  signal?: AbortSignal,
+  skipWarm?: boolean,
+  cookies?: string,
+): Promise<DeepLXBatchTranslationResult | DeepLXTranslationResult> {
+  const isBatch = typeof text !== 'string'
+  // A single text is the one-element case of a batch; only the response shape
+  // and the failure modes differ between the two.
+  const texts = typeof text === 'string' ? [text] : [...text]
+
+  if (isBatch) {
+    // An empty batch has no position to return a translation for; fail the
+    // whole call instead of resolving to a success with an empty array.
+    if (texts.length === 0) {
+      throw new Error('No text to translate', {
+        cause: { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' },
+      })
+    }
+  } else if (!text) {
     return { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' }
   }
 
-  if ([...text].length > MAX_FREE_TEXT_LENGTH) {
+  // The anonymous oneshot endpoint caps the *sum* of all `text` items, so a
+  // batch has to be chunked by total length, not by segment count.
+  const totalLength = texts.reduce(
+    (length, item) => length + [...item].length,
+    0,
+  )
+  if (totalLength > MAX_FREE_TEXT_LENGTH) {
     return {
       code: HTTP_STATUS_PAYLOAD_TOO_LARGE, // Payload Too Large
-      message: `text exceeds maximum length: ${[...text].length} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
+      message: isBatch
+        ? `texts exceed maximum total length: ${totalLength} characters across ${texts.length} texts (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} per request)`
+        : `text exceeds maximum length: ${totalLength} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
     }
   }
 
@@ -265,7 +324,7 @@ export const translateByDeepLX = async (
   }
 
   const reqData: OneshotRequest = {
-    text: [text],
+    text: texts,
     target_lang: targetResult.value,
     source_lang: sourceResult.value,
     usage_type: 'translate',
@@ -280,8 +339,9 @@ export const translateByDeepLX = async (
 
   const reqId = Date.now()
 
+  let response: OneshotResponse | null
   try {
-    const response = await xfetch<OneshotResponse | null>(
+    response = await xfetch<OneshotResponse | null>(
       dlSession ? ONESHOT_PRO_ENDPOINT : ONESHOT_FREE_ENDPOINT,
       {
         method: 'POST',
@@ -291,15 +351,26 @@ export const translateByDeepLX = async (
         ...createProxy({ url: proxyUrl }),
       },
     )
-
-    return processTranslationResponse(
-      response,
-      reqId,
-      sourceLang,
-      targetLang,
-      dlSession,
-    )
   } catch (error: unknown) {
     return parseTranslationError(error, reqId)
   }
+
+  // Deliberately outside the transport `try`: a misaligned batch throws instead
+  // of being reported as a request failure.
+  const result = processTranslationResponse(
+    response,
+    reqId,
+    sourceLang,
+    targetLang,
+    dlSession,
+    texts.length,
+    isBatch,
+  )
+
+  if (isBatch || !('data' in result)) {
+    return result
+  }
+
+  // A single-text caller keeps the original `data: string` shape.
+  return { ...result, data: result.data[0] }
 }

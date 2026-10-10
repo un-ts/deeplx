@@ -5,7 +5,7 @@
   },
   {
     "path": "./packages/@deeplx/core/lib/index.js",
-    "limit": "2.7kB"
+    "limit": "2.9kB"
   },
   {
     "path": "./packages/deeplx/lib/index.js",

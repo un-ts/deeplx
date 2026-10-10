@@ -25,6 +25,7 @@ An unofficial but powerful and easy-to-use yet free DeepL API client for Node.js
   - [Example 1](#example-1)
   - [Example 2](#example-2)
   - [Example 3](#example-3)
+  - [Batch translation](#batch-translation)
 - [Sponsors and Backers](#sponsors-and-backers)
   - [Sponsors](#sponsors)
   - [Backers](#backers)
@@ -142,6 +143,70 @@ await translate('Hello World', 'ZH', 'EN', {
 ```log
 '你好，世界'
 ```
+
+### Batch translation
+
+`translateByDeepLX` accepts `string | readonly string[]`. An array is sent as a
+single oneshot request whose `text` is that array, and `data` comes back
+position-aligned — one translation per requested text, in the same order — so a
+document of `n` segments costs one request instead of `n`:
+
+```js
+import { translateByDeepLX } from '@deeplx/core'
+
+const result = await translateByDeepLX('EN', 'ZH', [
+  'Hello world',
+  'How are you?',
+])
+
+if ('message' in result) throw new Error(result.message, { cause: result })
+
+// result.data[i] is the translation of the i-th input text:
+// ['你好，世界', '你好吗？']
+```
+
+A string argument keeps its previous shape exactly: `data` is a `string`, and the
+request body, the response fields and the error results are unchanged.
+
+#### Chunk by total length, not by segment count
+
+The anonymous oneshot endpoint caps the **sum** of all `text` items at 1500
+characters (Unicode code points) — `sum(texts.map(text => [...text].length))` —
+and answers `400` when a request exceeds it. `translateByDeepLX` validates this
+before sending and returns the existing `413` error result instead:
+
+```js
+import { MAX_FREE_TEXT_LENGTH } from '@deeplx/core'
+
+// Chunk by total length so that every request stays within the limit.
+function chunkByLength(texts, limit = MAX_FREE_TEXT_LENGTH) {
+  const chunks = []
+  let chunk = []
+  let length = 0
+  for (const text of texts) {
+    const size = [...text].length
+    if (length + size > limit && chunk.length > 0) {
+      chunks.push(chunk)
+      chunk = []
+      length = 0
+    }
+    chunk.push(text)
+    length += size
+  }
+  if (chunk.length > 0) chunks.push(chunk)
+  return chunks
+}
+```
+
+#### A batch fails as a whole
+
+A batch either succeeds with one translation per text or fails entirely: an empty
+array throws, and a response whose `translations` length differs from the
+requested texts throws too, rather than returning placeholders or misaligned
+data. The thrown `Error` carries the library's error result as its `cause`.
+Transport and endpoint errors are still returned as error results, exactly as for
+a string input. `translate` keeps its single-text signature — call
+`translateByDeepLX` directly for a batch.
 
 ## Sponsors and Backers
 

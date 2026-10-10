@@ -33,10 +33,16 @@ export interface DeepLXTranslationErrorResult {
   message: string
 }
 
-export interface DeepLXTranslationSuccessResult {
+/**
+ * @typeParam T - `string` for a single text, `string[]` for a batch. A batch's
+ * `data` is position-aligned with the requested `text` array.
+ */
+export interface DeepLXTranslationSuccessResult<
+  T extends string[] | string = string,
+> {
   code: number
   id: number
-  data: string // The primary translated text
+  data: T // The translated text(s), aligned with the requested text(s)
   alternatives: string[] // Other possible translations
   sourceLang: SourceLanguage
   targetLang: TargetLanguage
@@ -44,5 +50,11 @@ export interface DeepLXTranslationSuccessResult {
 }
 
 // DeepLXTranslationResult represents the final translation result
-export type DeepLXTranslationResult =
-  DeepLXTranslationErrorResult | DeepLXTranslationSuccessResult
+export type DeepLXTranslationResult<T extends string[] | string = string> =
+  DeepLXTranslationErrorResult | DeepLXTranslationSuccessResult<T>
+
+/**
+ * The result of a batch request, i.e. one whose `text` argument was an array:
+ * `data` holds one translation per requested text, in the same order.
+ */
+export type DeepLXBatchTranslationResult = DeepLXTranslationResult<string[]>

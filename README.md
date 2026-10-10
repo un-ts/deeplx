@@ -163,6 +163,29 @@ await translate('Ring til mig!', 'german', 'danish')
 'Ruf mich an!'
 ```
 
+#### Batch translation
+
+`translateByDeepLX` also accepts an array of texts and sends them in a single
+request, returning `data` position-aligned with the input:
+
+```js
+import { translateByDeepLX } from 'deeplx'
+
+const { data } = await translateByDeepLX('EN', 'ZH', [
+  'Hello world',
+  'How are you?',
+])
+
+// ['你好，世界', '你好吗？']
+```
+
+The endpoint limits the **sum** of all texts to 1500 characters per request
+(`sum(texts.map(text => [...text].length)) <= MAX_FREE_TEXT_LENGTH`), and a batch
+over the limit fails with the existing `413` result — chunk by total length, not
+by segment count. See
+[`@deeplx/core`](./packages/@deeplx/core/README.md#batch-translation) for the
+full batch docs.
+
 ### Example 3
 
 This will translate a text using a proxy and a DeepL Pro session cookie:
