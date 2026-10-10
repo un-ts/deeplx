@@ -36,6 +36,8 @@ stays the caller's decision.
 The CLI is aligned on top of it: `--text` and `--file` are repeatable, every
 value is a segment of one batch, and `deeplx` chunks those segments by total
 length, so one invocation translates a whole document in as few requests as the
-limit allows and prints one translation per segment, in order. The all-in-one
-`deeplx` package re-exports the library and the CLI, so it carries the same
-feature with a matching bump.
+limit allows and prints one translation per segment, in order.
+`--concurrency <count>` sends up to that many chunks at once, one at a time by
+default, because the endpoint rate-limits bursts. The all-in-one `deeplx`
+package re-exports the library and the CLI, so it carries the same feature with
+a matching bump.

@@ -26,6 +26,7 @@ export interface DeepLXCliOptions {
   proxy?: string
   skipWarm?: boolean
   cookie?: string
+  concurrency?: string
 }
 
 const COOKIE_CACHE_FILE = path.join(os.homedir(), '.deeplx_cookies')
@@ -70,6 +71,15 @@ function collect(value: string, previous: string[] | undefined): string[] {
   return previous ? [...previous, value] : [value]
 }
 
+/** A chunk is one request; sending them one at a time is the safe default. */
+function resolveConcurrency(value: string | undefined): number {
+  const concurrency = value == null ? 1 : Number(value)
+  if (!Number.isSafeInteger(concurrency) || concurrency < 1) {
+    throw new Error('--concurrency must be a positive integer')
+  }
+  return concurrency
+}
+
 const { version, description } = cjsRequire<{
   version: string
   description: string
@@ -100,9 +110,24 @@ program
   .option('--proxy <url>', 'Proxy URL for the request')
   .option('--skip-warm', 'Skip the warmup cookie fetch')
   .option('--cookie <value>', 'Provide cookies directly (skips warmup fetch)')
+  .option(
+    '--concurrency <count>',
+    'How many chunks to send at once (default: 1; the endpoint rate-limits bursts)',
+  )
   .action(async function () {
-    const { source, target, text, file, dlSession, proxy, skipWarm, cookie } =
-      this.opts<DeepLXCliOptions>()
+    const {
+      source,
+      target,
+      text,
+      file,
+      dlSession,
+      proxy,
+      skipWarm,
+      cookie,
+      concurrency: concurrencyOption,
+    } = this.opts<DeepLXCliOptions>()
+
+    const concurrency = resolveConcurrency(concurrencyOption)
 
     // A blank value means "not given", as it did for the single-value options.
     const texts = (text ?? []).filter(value => value.trim() !== '')
@@ -141,16 +166,24 @@ program
     }
 
     // One request per chunk: the endpoint caps the *sum* of all text items, so
-    // the segments are batched by total length, not by segment count.
+    // the segments are batched by total length, not by segment count. Chunks go
+    // out a wave at a time, so `--concurrency` stays bounded and the results
+    // keep the order of the segments they came from.
+    const chunks = chunkByLength(segments)
     const translated: string[] = []
-    for (const chunk of chunkByLength(segments)) {
-      const data = await translate(chunk, target, source, {
-        dlSession,
-        proxyUrl: proxy,
-        skipWarm: resolvedSkipWarm,
-        cookies: resolvedCookies,
-      })
-      translated.push(...data)
+    for (let index = 0; index < chunks.length; index += concurrency) {
+      const wave = chunks.slice(index, index + concurrency)
+      const results = await Promise.all(
+        wave.map(chunk =>
+          translate(chunk, target, source, {
+            dlSession,
+            proxyUrl: proxy,
+            skipWarm: resolvedSkipWarm,
+            cookies: resolvedCookies,
+          }),
+        ),
+      )
+      translated.push(...results.flat())
     }
 
     // Persist cookies for future invocations

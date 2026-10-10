@@ -126,6 +126,8 @@ Options:
   --proxy <url>          Proxy URL for the request
   --skip-warm            Skip the warmup cookie fetch
   --cookie <value>       Provide cookies directly (skips warmup fetch)
+  --concurrency <count>  How many chunks to send at once (default: 1; the
+                         endpoint rate-limits bursts)
   -h, --help             display help for command
 ```
 
@@ -167,7 +169,7 @@ deeplx -t ZH --text "Hello world" --text "How are you?"
 
 The anonymous oneshot endpoint caps the **sum** of all `text` items at 1500
 characters per request, so a longer batch is split into as few requests as that
-limit allows — `deeplx` chunks by total length, never by segment count. See
+limit allows — `deeplx` chunks by total length, never by segment count. Those requests go out one at a time by default; `--concurrency <count>` sends up to that many at once, which is faster on a long document but bursts an endpoint that rate-limits. See
 [`@deeplx/core`](../core/README.md#batch-translation) for the limit and the
 chunking rule.
 

@@ -20,6 +20,8 @@ type Translate = (
 const ORIGINAL_ARGV = process.argv
 const ORIGINAL_EXIT_CODE = process.exitCode
 const WAIT = { timeout: 5000 }
+/** Makes the first chunk of a wave finish after the chunk beside it. */
+const SLOW_CHUNK_MS = 40
 const tempDirs: string[] = []
 
 beforeEach(() => {
@@ -188,4 +190,89 @@ test('a rejected translation fails the command with its message', async () => {
   expect(String(error.mock.calls[0][0])).toContain(
     'texts exceed maximum total length',
   )
+})
+
+test('without --concurrency the chunks go out one at a time', async () => {
+  // Just over half the limit, so every segment is a chunk of its own.
+  const segmentSize = MAX_FREE_TEXT_LENGTH / 2 + 1
+  const segments = ['a'.repeat(segmentSize), 'b'.repeat(segmentSize)]
+  let inFlight = 0
+  let peak = 0
+  const translate = vi.fn<Translate>().mockImplementation(async text => {
+    inFlight += 1
+    peak = Math.max(peak, inFlight)
+    await new Promise(resolve => setTimeout(resolve, 5))
+    inFlight -= 1
+    return text.map(value => value[0])
+  })
+
+  const { log } = await runCli(
+    [
+      '-t',
+      'ZH',
+      ...segments.flatMap(segment => ['--text', segment]),
+      '--concurrency',
+      '1',
+    ],
+    translate,
+  )
+
+  await vi.waitFor(() => expect(log).toHaveBeenCalledOnce(), WAIT)
+  expect(translate).toHaveBeenCalledTimes(2)
+  expect(peak).toBe(1)
+  expect(log).toHaveBeenCalledWith('a\nb')
+})
+
+test('--concurrency bounds the requests in flight and keeps the order', async () => {
+  // Just over half the limit, so every segment is a chunk of its own.
+  const segmentSize = MAX_FREE_TEXT_LENGTH / 2 + 1
+  const segments = [
+    'a'.repeat(segmentSize),
+    'b'.repeat(segmentSize),
+    'c'.repeat(segmentSize),
+  ]
+  let inFlight = 0
+  let peak = 0
+  const translate = vi.fn<Translate>().mockImplementation(async text => {
+    inFlight += 1
+    peak = Math.max(peak, inFlight)
+    // The first chunk finishes last, so printing in completion order would
+    // reorder the segments.
+    await new Promise(resolve =>
+      setTimeout(resolve, text[0].startsWith('a') ? SLOW_CHUNK_MS : 5),
+    )
+    inFlight -= 1
+    return text.map(value => value[0])
+  })
+
+  const { log } = await runCli(
+    [
+      '-t',
+      'ZH',
+      ...segments.flatMap(segment => ['--text', segment]),
+      '--concurrency',
+      '2',
+    ],
+    translate,
+  )
+
+  await vi.waitFor(() => expect(log).toHaveBeenCalledOnce(), WAIT)
+  expect(translate).toHaveBeenCalledTimes(3)
+  expect(peak).toBe(2)
+  expect(log).toHaveBeenCalledWith('a\nb\nc')
+})
+
+test('a non-positive --concurrency fails the command', async () => {
+  const translate = vi.fn<Translate>()
+  const { error } = await runCli(
+    ['-t', 'ZH', '--text', 'Hallo', '--concurrency', '0'],
+    translate,
+  )
+
+  await vi.waitFor(() => expect(error).toHaveBeenCalled(), WAIT)
+  expect(process.exitCode).toBe(1)
+  expect(String(error.mock.calls[0][0])).toContain(
+    '--concurrency must be a positive integer',
+  )
+  expect(translate).not.toHaveBeenCalled()
 })
