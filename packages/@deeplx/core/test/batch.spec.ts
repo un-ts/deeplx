@@ -535,3 +535,53 @@ test('a batch at the limit in UTF-16 code units is still sent', async () => {
   expect(mockXfetch).toHaveBeenCalledOnce()
   expect(result).toMatchObject({ code: 200 })
 })
+
+test('a batch response with no translations throws the alignment error', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    translations: [],
+  })
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  const error = await rejectedError(
+    translateByDeepLX(
+      'DE',
+      'EN',
+      ['eins', 'zwei'],
+      undefined,
+      undefined,
+      undefined,
+      true,
+    ),
+  )
+
+  const message = 'translation count mismatch: expected 2 translations, got 0'
+  expect(error.message).toBe(message)
+  expect(causeOf(error)).toEqual({
+    code: HTTP_STATUS_SERVICE_UNAVAILABLE,
+    message,
+  })
+})
+
+test('a string response with no translations still resolves to the 503 result', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    translations: [],
+  })
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  await expect(
+    translateByDeepLX(
+      'DE',
+      'EN',
+      'Hallo',
+      undefined,
+      undefined,
+      undefined,
+      true,
+    ),
+  ).resolves.toMatchObject({
+    code: HTTP_STATUS_SERVICE_UNAVAILABLE,
+    message: 'Translation failed',
+  })
+})

@@ -198,7 +198,21 @@ function processTranslationResponse(
   textCount: number,
   aligned: boolean,
 ): DeepLXTranslationResult<string[]> {
-  if (!response?.translations || response.translations.length === 0) {
+  const translations = response?.translations
+
+  // A batch response has to line up one-to-one with the request: a missing,
+  // short or long `translations` array would silently shift every later
+  // segment, so the whole call fails instead of returning misaligned data.
+  if (aligned && translations?.length !== textCount) {
+    const message = `translation count mismatch: expected ${textCount} translations, got ${translations?.length ?? 0}`
+    throw new Error(message, {
+      cause: { code: HTTP_STATUS_SERVICE_UNAVAILABLE, message },
+    })
+  }
+
+  // A single text keeps resolving to the service-unavailable result when the
+  // endpoint answers without any translation at all.
+  if (!translations || translations.length === 0) {
     return {
       code: HTTP_STATUS_SERVICE_UNAVAILABLE,
       id: reqId,
@@ -206,19 +220,9 @@ function processTranslationResponse(
     }
   }
 
-  // A batch response has to line up one-to-one with the request: a short or
-  // long `translations` array would silently shift every later segment, so the
-  // whole call fails instead of returning misaligned data.
-  if (aligned && response.translations.length !== textCount) {
-    const message = `translation count mismatch: expected ${textCount} translations, got ${response.translations.length}`
-    throw new Error(message, {
-      cause: { code: HTTP_STATUS_SERVICE_UNAVAILABLE, message },
-    })
-  }
-
   // A single text keeps reading only the first translation, exactly as before;
   // a batch must not hold a placeholder for a segment DeepL did not translate.
-  const data = response.translations
+  const data = translations
     .slice(0, textCount)
     .map(translation => translation.text)
   if (data.some(translation => !translation)) {
@@ -229,7 +233,7 @@ function processTranslationResponse(
     }
   }
 
-  const mainTranslation = response.translations[0]
+  const mainTranslation = translations[0]
   const detectedLang = mainTranslation.detected_source_language
     ? (mainTranslation.detected_source_language.toUpperCase() as SourceLanguage)
     : sourceLang || 'auto'

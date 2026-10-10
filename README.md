@@ -204,8 +204,8 @@ const data = await translate(['Hello world', 'How are you?'], 'ZH', 'EN')
 
 The endpoint limits the **sum** of all texts to 1500 characters per request,
 counted in UTF-16 code units (`texts.reduce((n, text) => n + text.length, 0) <=
-MAX_FREE_TEXT_LENGTH`: a CJK character costs 1, an astral emoji 2). A batch over
-the limit fails with the existing `413` result, and `chunkByLength` packs the
+MAX_FREE_TEXT_LENGTH`: a CJK character costs 1, an astral emoji 2). A batch over the limit makes the `translate` call throw the existing `413` error
+(`translateByDeepLX` resolves to the same result), and `chunkByLength` packs the
 segments into requests that stay within it. See
 [`@deeplx/core`](./packages/@deeplx/core/README.md#batch-translation) for the
 full batch docs.
