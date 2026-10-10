@@ -168,10 +168,11 @@ unchanged.
 #### Chunk by total length, not by segment count
 
 The anonymous oneshot endpoint caps the **sum** of all `text` items at 1500
-characters (Unicode code points) — `sum(texts.map(text => [...text].length))` —
-and answers `400` when a request exceeds it. Both helpers validate this before
-sending and return the existing `413` error result instead, and `chunkByLength`
-packs segments into requests that stay within it:
+characters, counted in **UTF-16 code units** — `String.prototype.length`, so a
+CJK character costs 1 and an astral emoji costs 2 — and answers `400` when a
+request exceeds it. Both helpers validate this before sending and return the
+existing `413` error result instead, and `chunkByLength` packs segments into
+requests that stay within it:
 
 ```js
 import { chunkByLength, translate } from '@deeplx/core'

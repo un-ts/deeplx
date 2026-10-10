@@ -13,9 +13,12 @@ to a result whose `data` is that `string[]` (`DeepLXBatchTranslationResult`). A
 string argument keeps the previous request, response and error shapes exactly.
 
 The anonymous oneshot endpoint caps the **sum** of all `text` items at 1500
-characters, so callers must chunk a document by total length rather than by
-segment count. `translateByDeepLX` checks that limit locally and resolves to the
-existing 413 error result instead of letting DeepL answer 400.
+characters, counted in UTF-16 code units (`String.prototype.length`: a CJK
+character costs 1, an astral emoji 2 — probed against the live endpoint, which
+accepts 750 emoji and rejects 751, while accepting 2400 bytes of CJK). Callers
+must chunk a document by total length rather than by segment count.
+`translateByDeepLX` checks that limit locally and resolves to the existing 413
+error result instead of letting DeepL answer 400.
 
 A batch either succeeds with one translation per text or fails as a whole: an
 empty array, an array holding an empty text (the message names its index), and a

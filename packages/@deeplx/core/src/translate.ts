@@ -310,16 +310,18 @@ export async function translateByDeepLX(
 
   // The anonymous oneshot endpoint caps the *sum* of all `text` items, so a
   // batch has to be chunked by total length, not by segment count.
-  const totalLength = texts.reduce(
-    (length, item) => length + [...item].length,
-    0,
-  )
+  //
+  // The endpoint counts UTF-16 code units (`String.prototype.length`), not code
+  // points: probed live, 750 emoji (1500 units) is accepted while 751 (1502
+  // units) is a 400, and 2400-byte CJK text is accepted, so neither bytes nor
+  // code points nor display columns are the unit. Keep `item.length`.
+  const totalLength = texts.reduce((length, item) => length + item.length, 0)
   if (totalLength > MAX_FREE_TEXT_LENGTH) {
     return {
       code: HTTP_STATUS_PAYLOAD_TOO_LARGE, // Payload Too Large
       message: isBatch
-        ? `texts exceed maximum total length: ${totalLength} characters across ${texts.length} texts (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} per request)`
-        : `text exceeds maximum length: ${totalLength} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
+        ? `texts exceed maximum total length: ${totalLength} characters across ${texts.length} texts (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units per request)`
+        : `text exceeds maximum length: ${totalLength} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units)`,
     }
   }
 

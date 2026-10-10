@@ -117,7 +117,7 @@ test('a string input over the limit keeps its existing 413 message', async () =>
 
   expect(result).toMatchObject({
     code: HTTP_STATUS_PAYLOAD_TOO_LARGE,
-    message: `text exceeds maximum length: ${length} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
+    message: `text exceeds maximum length: ${length} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units)`,
   })
   expect(mockXfetch).not.toHaveBeenCalled()
 })
@@ -322,7 +322,7 @@ test('a batch is rejected locally over the anonymous total-length limit', async 
 
   expect(result).toMatchObject({
     code: HTTP_STATUS_PAYLOAD_TOO_LARGE,
-    message: `texts exceed maximum total length: ${MAX_FREE_TEXT_LENGTH + 1} characters across 2 texts (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} per request)`,
+    message: `texts exceed maximum total length: ${MAX_FREE_TEXT_LENGTH + 1} characters across 2 texts (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units per request)`,
   })
   expect(mockXfetch).not.toHaveBeenCalled()
 })
@@ -487,4 +487,51 @@ test('a batch with a blank item is rejected before any request is made', async (
     message,
   })
   expect(mockXfetch).not.toHaveBeenCalled()
+})
+
+test('the total-length limit counts UTF-16 code units, as the endpoint does', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>()
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  // `MAX_FREE_TEXT_LENGTH / 2` emoji are exactly the limit in UTF-16 units, so
+  // one more emoji is two units over while a code-point count would still fit.
+  const result = await translateByDeepLX(
+    'DE',
+    'EN',
+    ['😀'.repeat(MAX_FREE_TEXT_LENGTH / 2), '😀'],
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+
+  expect(result).toMatchObject({
+    code: HTTP_STATUS_PAYLOAD_TOO_LARGE,
+    message: `texts exceed maximum total length: ${MAX_FREE_TEXT_LENGTH + 2} characters across 2 texts (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units per request)`,
+  })
+  expect(mockXfetch).not.toHaveBeenCalled()
+})
+
+test('a batch at the limit in UTF-16 code units is still sent', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    translations: [{ text: 'x' }],
+  })
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  // MAX_FREE_TEXT_LENGTH / 2 emoji are exactly MAX_FREE_TEXT_LENGTH UTF-16
+  // units, although they are only half as many code points.
+  const result = await translateByDeepLX(
+    'DE',
+    'EN',
+    ['😀'.repeat(MAX_FREE_TEXT_LENGTH / 2)],
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+
+  expect(mockXfetch).toHaveBeenCalledOnce()
+  expect(result).toMatchObject({ code: 200 })
 })
