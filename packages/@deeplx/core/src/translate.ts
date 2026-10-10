@@ -281,6 +281,47 @@ async function resolveRequestCookies(
 }
 
 /**
+ * `Array.isArray` narrowed to `unknown[]` rather than the `any[]` TypeScript
+ * hands back, so the elements get validated instead of trusted.
+ */
+function isList(value: unknown): value is unknown[] {
+  return Array.isArray(value)
+}
+
+/**
+ * `text` is either one string or a list of them, exactly as the server-side
+ * `/translate` insists: a missing, `null` or otherwise wrong value names no text
+ * (`400 Invalid request payload`) rather than an empty text. Inside a list, a
+ * `null` or missing element is the empty string — the value the server-side
+ * decoder leaves behind for it, which is a blank text like any other — while any
+ * other value is a payload it cannot bind either.
+ *
+ * JavaScript callers are not type-checked, so this is also what keeps a wrong
+ * value from reaching `String.prototype.trim` or the request body as a crash.
+ */
+function normalizeTexts(text: unknown): string[] | undefined {
+  if (typeof text === 'string') {
+    return [text]
+  }
+  if (!isList(text)) {
+    return undefined
+  }
+
+  const texts: string[] = []
+  // A hole in a sparse list iterates as `undefined`: the empty string.
+  for (const item of text) {
+    if (typeof item === 'string') {
+      texts.push(item)
+    } else if (item === null || item === undefined) {
+      texts.push('')
+    } else {
+      return undefined
+    }
+  }
+  return texts
+}
+
+/**
  * The texts the endpoint has to translate: a blank one (empty or whitespace
  * only) carries nothing, so it is not sent and is answered with itself by
  * `restoreBlankSegments`. Nothing about emptiness is an error — an empty list is
@@ -333,21 +374,18 @@ function restoreBlankSegments(
  * in UTF-16 code units (`String.prototype.length`), not code points: probed
  * live, 750 emoji (1500 units) is accepted while 751 (1502 units) is a 400, and
  * 2400-byte CJK text is accepted, so neither bytes, code points nor display
- * columns are the unit.
+ * columns are the unit. The message is the server-side one, verbatim, so a
+ * caller cannot tell which layer refused the request.
  */
 function lengthError(
   totalLength: number,
-  textCount: number,
-  isBatch: boolean,
 ): DeepLXTranslationErrorResult | undefined {
   if (totalLength <= MAX_FREE_TEXT_LENGTH) {
     return undefined
   }
   return {
     code: HTTP_STATUS_PAYLOAD_TOO_LARGE, // Payload Too Large
-    message: isBatch
-      ? `texts exceed maximum total length: ${totalLength} characters across ${textCount} texts (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units per request)`
-      : `text exceeds maximum length: ${totalLength} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units)`,
+    message: `text exceeds maximum length: ${totalLength} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
   }
 }
 
@@ -419,10 +457,15 @@ export async function translateByDeepLX(
   skipWarm?: boolean,
   cookies?: string,
 ): Promise<DeepLXBatchTranslationResult | DeepLXTranslationResult> {
+  // A request that never named its texts is refused outright, before anything
+  // else: `text: null`, a missing argument or a wrong type is a payload without
+  // its parameter, not an empty text.
+  const texts = normalizeTexts(text)
+  if (!texts) {
+    return { code: HTTP_STATUS_BAD_REQUEST, message: 'Invalid request payload' }
+  }
+
   const isBatch = typeof text !== 'string'
-  // A single text is the one-element case of a batch; only the response shape
-  // and the failure modes differ between the two.
-  const texts = typeof text === 'string' ? [text] : [...text]
 
   // Nothing about emptiness is an error: a blank text (empty or whitespace
   // only) is not sent and is answered with itself, so the positions of a
@@ -430,18 +473,20 @@ export async function translateByDeepLX(
   // empty list.
   const payload = textsToTranslate(texts)
 
+  // The languages are resolved first, exactly as the server-side `/translate`
+  // does, so an unsupported one is refused before the cap is even looked at.
+  const languages = resolveLanguages(sourceLang, targetLang)
+  if ('error' in languages) {
+    return { code: HTTP_STATUS_BAD_REQUEST, message: languages.error }
+  }
+
   // The anonymous oneshot endpoint caps the *sum* of all `text` items, so a
   // batch has to be chunked by total length, not by segment count. Blank texts
   // are not charged against the cap, because they are never sent.
   const totalLength = payload.reduce((length, item) => length + item.length, 0)
-  const tooLong = lengthError(totalLength, texts.length, isBatch)
+  const tooLong = lengthError(totalLength)
   if (tooLong) {
     return tooLong
-  }
-
-  const languages = resolveLanguages(sourceLang, targetLang)
-  if ('error' in languages) {
-    return { code: HTTP_STATUS_BAD_REQUEST, message: languages.error }
   }
 
   if (payload.length === 0) {

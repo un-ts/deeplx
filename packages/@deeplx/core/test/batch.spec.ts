@@ -113,7 +113,7 @@ test('a string input over the limit keeps its existing 413 message', async () =>
 
   expect(result).toMatchObject({
     code: HTTP_STATUS_PAYLOAD_TOO_LARGE,
-    message: `text exceeds maximum length: ${length} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units)`,
+    message: `text exceeds maximum length: ${length} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
   })
   expect(mockXfetch).not.toHaveBeenCalled()
 })
@@ -320,7 +320,7 @@ test('a batch is rejected locally over the anonymous total-length limit', async 
 
   expect(result).toMatchObject({
     code: HTTP_STATUS_PAYLOAD_TOO_LARGE,
-    message: `texts exceed maximum total length: ${MAX_FREE_TEXT_LENGTH + 1} characters across 2 texts (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units per request)`,
+    message: `text exceeds maximum length: ${MAX_FREE_TEXT_LENGTH + 1} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
   })
   expect(mockXfetch).not.toHaveBeenCalled()
 })
@@ -550,7 +550,7 @@ test('the total-length limit counts UTF-16 code units, as the endpoint does', as
 
   expect(result).toMatchObject({
     code: HTTP_STATUS_PAYLOAD_TOO_LARGE,
-    message: `texts exceed maximum total length: ${MAX_FREE_TEXT_LENGTH + 2} characters across 2 texts (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH} UTF-16 code units per request)`,
+    message: `text exceeds maximum length: ${MAX_FREE_TEXT_LENGTH + 2} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
   })
   expect(mockXfetch).not.toHaveBeenCalled()
 })
@@ -681,5 +681,102 @@ test('the translate helper answers a blank text with itself', async () => {
   await expect(
     translate(['', '   '], 'EN', 'DE', { skipWarm: true }),
   ).resolves.toStrictEqual(['', '   '])
+  expect(mockXfetch).not.toHaveBeenCalled()
+})
+
+test('a request that names no text is refused as an invalid payload', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>()
+  await setupXfetchMock(mockXfetch)
+
+  const wrongInputs: unknown[] = [
+    undefined,
+    null,
+    100,
+    ['eins', {}],
+    ['eins', ['zwei']],
+    ['eins', true],
+  ]
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  for (const wrong of wrongInputs) {
+    const result = await translateByDeepLX(
+      'DE',
+      'EN',
+      // @ts-expect-error -- only a string or a list of strings names texts
+      wrong,
+      undefined,
+      undefined,
+      undefined,
+      true,
+    )
+
+    // Nothing about emptiness is an error, but a payload without its parameter
+    // is: `null`, a missing argument or a wrong type never reaches the endpoint.
+    expect(result).toMatchObject({
+      code: 400,
+      message: 'Invalid request payload',
+    })
+  }
+
+  expect(mockXfetch).not.toHaveBeenCalled()
+})
+
+test('a null or missing element is the empty string, as upstream decodes it', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    translations: [{ text: 'one' }],
+  })
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  const result = await translateByDeepLX(
+    'DE',
+    'EN',
+    // @ts-expect-error -- a null element decodes to an empty text
+    ['eins', null, undefined],
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+
+  // The server-side decoder leaves the zero value for a null element, so it is a
+  // blank text like any other: never sent, answered with itself.
+  expect(mockXfetch).toHaveBeenCalledOnce()
+  expect(lastBody(mockXfetch)).toMatchObject({ text: ['eins'] })
+  expect(result).toMatchObject({ code: 200, data: ['one', '', ''] })
+})
+
+test('an unsupported language is refused before the total-length limit', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>()
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  const result = await translateByDeepLX(
+    'DE',
+    // @ts-expect-error -- only supported languages are accepted by the types
+    'klingon',
+    ['a'.repeat(MAX_FREE_TEXT_LENGTH + 1)],
+    undefined,
+    undefined,
+    undefined,
+    true,
+  )
+
+  expect(result).toMatchObject({
+    code: 400,
+    message: 'unsupported target_lang "klingon"',
+  })
+  expect(mockXfetch).not.toHaveBeenCalled()
+})
+
+test('the translate helper throws the invalid-payload result for a wrong request', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>()
+  await setupXfetchMock(mockXfetch)
+
+  const { translate } = await import('@deeplx/core')
+  await expect(
+    // @ts-expect-error -- only a string or a list of strings names texts
+    translate(null, 'EN', 'DE', { skipWarm: true }),
+  ).rejects.toThrow('Invalid request payload')
   expect(mockXfetch).not.toHaveBeenCalled()
 })

@@ -24,7 +24,11 @@ Emptiness is not an error: a text that carries something is translated, a blank
 text (empty or whitespace-only) is answered with itself without being sent, and
 an empty array is answered with an empty array, so a segmented document keeps its
 positions and the caller never has to filter or remap anything. This mirrors the
-server-side `/translate`. The one failure left is a response that does not line
+server-side `/translate`. A request that names no text — `null`, `undefined`, a
+wrong type, or a list holding something other than a string — resolves to the
+same `400 Invalid request payload` the server-side `/translate` answers, while a
+`null` or missing element inside a list is the empty string, as it is there. The
+one failure left is a response that does not line
 up with the sent texts, which throws an `Error` carrying the library's
 `DeepLXTranslationErrorResult` as `cause`.
 
