@@ -170,14 +170,18 @@ unchanged.
 The anonymous oneshot endpoint caps the **sum** of all `text` items at 1500
 characters, counted in **UTF-16 code units** — `String.prototype.length`, so a
 CJK character costs 1 and an astral emoji costs 2 — and answers `400` when a
-request exceeds it. Both helpers validate this before sending and return the
-existing `413` error result instead, and `chunkByLength` packs segments into
-requests that stay within it:
+request exceeds it. Both helpers validate this before sending:
+`translateByDeepLX` resolves to the existing `413` error result and `translate`
+throws it. `chunkByLength` packs segments into requests that stay within it:
 
 ```js
 import { chunkByLength, translate } from '@deeplx/core'
 
-for (const chunk of chunkByLength(document.split('\n'))) {
+// A blank segment is rejected, so drop blank lines before chunking; keep the
+// original index if the translations have to be mapped back to the document.
+const lines = document.split('\n').filter(line => line.trim() !== '')
+
+for (const chunk of chunkByLength(lines)) {
   const data = await translate(chunk, 'ZH', 'EN')
   // one translation per segment, in the same order
 }
