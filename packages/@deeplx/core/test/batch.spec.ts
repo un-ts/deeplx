@@ -677,46 +677,6 @@ test('the translate helper answers a blank text with itself', async () => {
   expect(mockXfetch).not.toHaveBeenCalled()
 })
 
-test('a request that names no text is refused as an invalid payload', async () => {
-  const mockXfetch = vi.fn<typeof xfetch>()
-  await setupXfetchMock(mockXfetch)
-
-  const wrongInputs: unknown[] = [
-    undefined,
-    null,
-    100,
-    [null],
-    ['eins', null],
-    ['eins', undefined],
-    ['eins', {}],
-    ['eins', ['zwei']],
-    ['eins', true],
-  ]
-
-  const { translateByDeepLX } = await import('@deeplx/core')
-  for (const wrong of wrongInputs) {
-    const result = await translateByDeepLX(
-      'DE',
-      'EN',
-      // @ts-expect-error -- only a string or a list of strings names texts
-      wrong,
-      undefined,
-      undefined,
-      undefined,
-      true,
-    )
-
-    // Nothing about emptiness is an error, but a payload without its parameter
-    // is: `null`, a missing argument or a wrong type never reaches the endpoint.
-    expect(result).toMatchObject({
-      code: 400,
-      message: 'Invalid request payload',
-    })
-  }
-
-  expect(mockXfetch).not.toHaveBeenCalled()
-})
-
 test('an unsupported language is refused before the total-length limit', async () => {
   const mockXfetch = vi.fn<typeof xfetch>()
   await setupXfetchMock(mockXfetch)
@@ -737,17 +697,5 @@ test('an unsupported language is refused before the total-length limit', async (
     code: 400,
     message: 'unsupported target_lang "klingon"',
   })
-  expect(mockXfetch).not.toHaveBeenCalled()
-})
-
-test('the translate helper throws the invalid-payload result for a wrong request', async () => {
-  const mockXfetch = vi.fn<typeof xfetch>()
-  await setupXfetchMock(mockXfetch)
-
-  const { translate } = await import('@deeplx/core')
-  await expect(
-    // @ts-expect-error -- only a string or a list of strings names texts
-    translate(null, 'EN', 'DE', { skipWarm: true }),
-  ).rejects.toThrow('Invalid request payload')
   expect(mockXfetch).not.toHaveBeenCalled()
 })

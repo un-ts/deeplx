@@ -125,7 +125,7 @@ function resolveLang(
 function parseTranslationError(
   error: unknown,
   reqId: number,
-): DeepLXTranslationErrorResult & { id: number } {
+): DeepLXTranslationErrorResult {
   // `x-fetch` wraps transport failures, non-2xx responses and unparseable
   // bodies alike in `XFetchError`; only an error status carries DeepL's detail.
   if (isXFetchError<{ title?: string; message?: string }>(error)) {
@@ -256,37 +256,6 @@ function processTranslationResponse(
 }
 
 /**
- * `text` is either one string or a list of them, exactly as the server-side
- * `/translate` insists: a missing, `null` or otherwise wrong value names no text
- * (`400 Invalid request payload`) rather than an empty text. Inside a list every
- * element has to be a string — a `null` one included, which the server-side
- * decoder rejects too — while an empty string is a perfectly good text.
- *
- * JavaScript callers are not type-checked, so this is also what keeps a wrong
- * value from reaching `String.prototype.trim` or the request body as a crash.
- */
-function normalizeTexts(text: unknown): string[] | undefined {
-  if (typeof text === 'string') {
-    return [text]
-  }
-  if (!Array.isArray(text)) {
-    return undefined
-  }
-
-  // `Array.isArray` hands the elements back as `any`; name them as `unknown`.
-  const items: unknown[] = text
-  const texts: string[] = []
-  // A hole in a sparse list iterates as `undefined`, which is not a string.
-  for (const item of items) {
-    if (typeof item !== 'string') {
-      return undefined
-    }
-    texts.push(item)
-  }
-  return texts
-}
-
-/**
  * The positions of the texts that carry something to translate, and their total
  * length. A blank text — empty, or nothing but whitespace — carries nothing, so
  * it is not sent and `mergeTranslations` answers it with itself, exactly as the
@@ -306,24 +275,6 @@ function textsToTranslate(texts: readonly string[]): {
     totalLength += text.length
   }
   return { positions, totalLength }
-}
-
-/** The success result for a request the endpoint never had to see. */
-function localResult(
-  texts: readonly string[],
-  sourceLang: SourceLanguage | undefined,
-  targetLang: TargetLanguage,
-  dlSession: string | undefined,
-): DeepLXTranslationResult<string[]> {
-  return {
-    code: HTTP_STATUS_OK,
-    id: Date.now(),
-    data: [...texts],
-    alternatives: [],
-    sourceLang: sourceLang || 'auto',
-    targetLang,
-    method: dlSession ? 'Pro' : 'Free',
-  }
 }
 
 /**
@@ -378,15 +329,10 @@ export const translateByDeepLX = async <T extends string | readonly string[]>(
   skipWarm?: boolean,
   cookies?: string,
 ): Promise<DeepLXTranslationResult<TranslatedText<T>>> => {
-  // A request that never named its texts is refused outright, before anything
-  // else: `text: null`, a missing argument or a wrong type is a payload without
-  // its parameter, not an empty text.
-  const texts = normalizeTexts(text)
-  if (!texts) {
-    return { code: HTTP_STATUS_BAD_REQUEST, message: 'Invalid request payload' }
-  }
-
+  // A single text is the one-element case of a batch; the input shape is the
+  // caller's to get right, and it decides the shape of `data` below.
   const isBatch = typeof text !== 'string'
+  const texts = isBatch ? [...text] : [text]
 
   // Nothing about emptiness is an error: a blank text (empty or whitespace
   // only) is not sent and is answered with itself, so the positions of a
@@ -424,7 +370,15 @@ export const translateByDeepLX = async <T extends string | readonly string[]>(
   if (positions.length === 0) {
     // There is nothing to ask the endpoint about: mirror the request back.
     return finalizeResult<T>(
-      localResult(texts, sourceLang, targetLang, dlSession),
+      {
+        code: HTTP_STATUS_OK,
+        id: Date.now(),
+        data: texts,
+        alternatives: [],
+        sourceLang: sourceLang || 'auto',
+        targetLang,
+        method: dlSession ? 'Pro' : 'Free',
+      },
       texts,
       positions,
       isBatch,
