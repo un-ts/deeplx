@@ -677,6 +677,32 @@ test('the translate helper answers a blank text with itself', async () => {
   expect(mockXfetch).not.toHaveBeenCalled()
 })
 
+test('a text that is not a string or a list of strings is refused as an invalid payload', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>()
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  for (const wrong of [undefined, null, 100, [null], ['eins', undefined]]) {
+    await expect(
+      translateByDeepLX(
+        'DE',
+        'EN',
+        // @ts-expect-error -- only a string or a list of strings names texts
+        wrong,
+        undefined,
+        undefined,
+        undefined,
+        true,
+      ),
+    ).resolves.toMatchObject({
+      code: 400,
+      message: 'Invalid request payload',
+    })
+  }
+
+  expect(mockXfetch).not.toHaveBeenCalled()
+})
+
 test('an unsupported language is refused before the total-length limit', async () => {
   const mockXfetch = vi.fn<typeof xfetch>()
   await setupXfetchMock(mockXfetch)
