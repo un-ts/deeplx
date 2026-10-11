@@ -198,9 +198,10 @@ mirrors the server-side `/translate`.
 
 A request that names no text is refused instead: `null`, `undefined`, a wrong
 type, or a list holding something that is not a string — a `null` element
-included, as the server-side decoder rejects it — resolves to the same `400
-Invalid request payload` the server-side `/translate` answers. An empty string is
-a perfectly good text, and so is an empty list.
+included, as the server-side decoder rejects it. `translateByDeepLX` resolves to
+the same `400 Invalid request payload` the server-side `/translate` answers, and
+`translate` throws an `Error` carrying that result as its `cause`. An empty
+string is a perfectly good text, and so is an empty list.
 
 The one failure left is a response that does not line up with the texts that were
 sent: a `translations` array that is shorter, longer or missing throws a count

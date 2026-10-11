@@ -27,8 +27,9 @@ an empty array is answered with an empty array, so a segmented document keeps it
 positions and the caller never has to filter or remap anything. This mirrors the
 server-side `/translate`. A request that names no text — `null`, `undefined`, a
 wrong type, or a list holding something other than a string, a `null` element
-included — resolves to the same `400 Invalid request payload` the server-side
-`/translate` answers, while an empty string is a text like any other. The
+included — is refused with the same `400 Invalid request payload` the
+server-side `/translate` answers: `translateByDeepLX` resolves to that result and
+`translate` throws it, while an empty string is a text like any other. The
 one failure left is a response that does not line
 up with the sent texts, which throws an `Error` carrying the library's
 `DeepLXTranslationErrorResult` as `cause`.
