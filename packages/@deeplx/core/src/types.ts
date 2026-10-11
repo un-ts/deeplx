@@ -30,6 +30,8 @@ export interface OneshotResponse {
 
 export interface DeepLXTranslationErrorResult {
   code: number
+  /** The request id, for the errors the endpoint answered; absent otherwise. */
+  id?: number
   message: string
 }
 

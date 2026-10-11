@@ -5,8 +5,8 @@ import {
   HTTP_STATUS_PAYLOAD_TOO_LARGE,
   HTTP_STATUS_SERVICE_UNAVAILABLE,
   MAX_FREE_TEXT_LENGTH,
-  type DeepLXBatchTranslationResult,
   type DeepLXTranslationResult,
+  type TranslatedText,
 } from '@deeplx/core'
 
 // Each test gets a fresh module instance so module-level state is isolated.
@@ -45,22 +45,17 @@ function causeOf(error: Error): unknown {
 
 // A request whose texts all carry nothing is answered locally, so the transport
 // mock stays un-called: every blank test only varies the text and the answer.
-async function localAnswer(text: string): Promise<DeepLXTranslationResult>
-async function localAnswer(
-  text: readonly string[],
-): Promise<DeepLXBatchTranslationResult>
-async function localAnswer(
-  text: string | readonly string[],
-): Promise<DeepLXBatchTranslationResult | DeepLXTranslationResult> {
+async function localAnswer<T extends string | readonly string[]>(
+  text: T,
+): Promise<DeepLXTranslationResult<TranslatedText<T>>> {
   const mockXfetch = vi.fn<typeof xfetch>()
   await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
-  // The value keeps its runtime shape; the cast only selects one overload.
   const result = await translateByDeepLX(
     'DE',
     'EN',
-    text as readonly string[],
+    text,
     undefined,
     undefined,
     undefined,

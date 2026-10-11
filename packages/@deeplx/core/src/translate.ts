@@ -24,7 +24,6 @@ import {
   type TargetLanguage,
 } from './constants.ts'
 import type {
-  DeepLXBatchTranslationResult,
   DeepLXTranslationErrorResult,
   DeepLXTranslationResult,
   OneshotRequest,
@@ -126,7 +125,7 @@ function resolveLang(
 function parseTranslationError(
   error: unknown,
   reqId: number,
-): DeepLXTranslationResult {
+): DeepLXTranslationErrorResult {
   // `x-fetch` wraps transport failures, non-2xx responses and unparseable
   // bodies alike in `XFetchError`; only an error status carries DeepL's detail.
   if (isXFetchError<{ title?: string; message?: string }>(error)) {
@@ -417,49 +416,38 @@ function resolveLanguages(
  * A single-text caller keeps the original `data: string` shape; a batch with
  * blank segments gets those positions back.
  */
-function finalizeResult(
+function finalizeResult<T extends string | readonly string[]>(
   result: DeepLXTranslationResult<string[]>,
   texts: readonly string[],
   positions: readonly number[],
   isBatch: boolean,
-): DeepLXBatchTranslationResult | DeepLXTranslationResult {
+): DeepLXTranslationResult<TranslatedText<T>> {
   if (!('data' in result)) {
     return result
   }
   const data = mergeTranslations(texts, positions, result.data)
-  return isBatch ? { ...result, data } : { ...result, data: data[0] }
+  const shaped = isBatch ? { ...result, data } : { ...result, data: data[0] }
+  // `T` is the caller's input shape, and the branch above is what picked it.
+  return shaped as DeepLXTranslationResult<TranslatedText<T>>
 }
 
-export function translateByDeepLX(
+/**
+ * The answer follows the shape of the text it was asked about: one string in, a
+ * result whose `data` is a string; a list in, one whose `data` is a list.
+ */
+export type TranslatedText<T extends string | readonly string[]> =
+  T extends string ? string : string[]
+
+export async function translateByDeepLX<T extends string | readonly string[]>(
   sourceLang: SourceLanguage | undefined,
   targetLang: TargetLanguage,
-  text: string,
+  text: T,
   proxyUrl?: string,
   dlSession?: string,
   signal?: AbortSignal,
   skipWarm?: boolean,
   cookies?: string,
-): Promise<DeepLXTranslationResult>
-export function translateByDeepLX(
-  sourceLang: SourceLanguage | undefined,
-  targetLang: TargetLanguage,
-  text: readonly string[],
-  proxyUrl?: string,
-  dlSession?: string,
-  signal?: AbortSignal,
-  skipWarm?: boolean,
-  cookies?: string,
-): Promise<DeepLXBatchTranslationResult>
-export async function translateByDeepLX(
-  sourceLang: SourceLanguage | undefined,
-  targetLang: TargetLanguage,
-  text: string | readonly string[],
-  proxyUrl?: string,
-  dlSession?: string,
-  signal?: AbortSignal,
-  skipWarm?: boolean,
-  cookies?: string,
-): Promise<DeepLXBatchTranslationResult | DeepLXTranslationResult> {
+): Promise<DeepLXTranslationResult<TranslatedText<T>>> {
   // A request that never named its texts is refused outright, before anything
   // else: `text: null`, a missing argument or a wrong type is a payload without
   // its parameter, not an empty text.
@@ -493,7 +481,7 @@ export async function translateByDeepLX(
 
   if (positions.length === 0) {
     // There is nothing to ask the endpoint about: mirror the request back.
-    return finalizeResult(
+    return finalizeResult<T>(
       localResult(texts, sourceLang, targetLang, dlSession),
       texts,
       positions,
@@ -545,7 +533,7 @@ export async function translateByDeepLX(
 
   // Deliberately outside the transport `try`: a misaligned batch throws instead
   // of being reported as a request failure.
-  return finalizeResult(
+  return finalizeResult<T>(
     processTranslationResponse(
       response,
       reqId,

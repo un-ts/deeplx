@@ -1,5 +1,5 @@
 import type { SourceLanguage, TargetLanguage } from './constants.ts'
-import { translateByDeepLX } from './translate.ts'
+import { translateByDeepLX, type TranslatedText } from './translate.ts'
 
 export interface TranslateOptions {
   dlSession?: string
@@ -9,31 +9,17 @@ export interface TranslateOptions {
   cookies?: string
 }
 
-export function translate(
-  text: string,
+export async function translate<T extends string | readonly string[]>(
+  text: T,
   targetLang: TargetLanguage,
   sourceLang?: SourceLanguage,
   options?: TranslateOptions,
-): Promise<string>
-export function translate(
-  text: readonly string[],
-  targetLang: TargetLanguage,
-  sourceLang?: SourceLanguage,
-  options?: TranslateOptions,
-): Promise<string[]>
-export async function translate(
-  text: string | readonly string[],
-  targetLang: TargetLanguage,
-  sourceLang?: SourceLanguage,
-  options?: TranslateOptions,
-): Promise<string[] | string> {
+): Promise<TranslatedText<T>> {
   const { proxyUrl, dlSession, signal, skipWarm, cookies } = options ?? {}
-  // `translateByDeepLX` is overloaded, so the union picks one of them: the value
-  // keeps its runtime shape and both results carry the `data` read here.
   const result = await translateByDeepLX(
     sourceLang,
     targetLang,
-    text as readonly string[],
+    text,
     proxyUrl,
     dlSession,
     signal,
