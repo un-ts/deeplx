@@ -26,10 +26,12 @@ All in one for [`@deeplx/core`](https://github.com/un-ts/deeplx/blob/master/pack
     - [Help](#help)
     - [Example 1](#example-1)
     - [Example 2](#example-2)
+    - [Example 3](#example-3)
   - [Node library](#node-library)
     - [Example 1](#example-1-1)
     - [Example 2](#example-2-1)
-    - [Example 3](#example-3)
+    - [Batch translation](#batch-translation)
+    - [Example 3](#example-3-1)
 - [Sponsors and Backers](#sponsors-and-backers)
   - [Sponsors](#sponsors)
   - [Backers](#backers)
@@ -126,10 +128,16 @@ Options:
   -V, --version          output the version number
   -s, --source <text>    Source language of your text
   -t, --target <text>    Target language of your desired text
-  --text <text>          Text to be translated
-  -f, --file <path>      File to be translated
-  --dl-session <cookie>  DeepL Pro session cookie (dl_session)
+  --text <text>          Text to be translated, repeatable: every value is a
+                         segment of one batch
+  -f, --file <path>      File to be translated, repeatable: every file is a
+                         segment of one batch
+  --dl-session <cookie>  DeepL Pro session cookie (dl_session) (env: DL_SESSION)
   --proxy <url>          Proxy URL for the request
+  --skip-warm            Skip the warmup cookie fetch
+  --cookie <value>       Provide cookies directly (skips warmup fetch)
+  --concurrency <count>  How many chunks to send at once (default: 1; the
+                         endpoint rate-limits bursts)
   -h, --help             display help for command
 ```
 
@@ -152,6 +160,26 @@ This will translate the file (`test.txt`) text from Italian (`IT`) into Portugue
 ```sh
 deeplx -t PT -f test.txt
 ```
+
+#### Example 3
+
+Repeat `--text` (or `--file`) to translate several texts as one batch. One
+translation is printed per segment, in the order they were given:
+
+```sh
+deeplx -t ZH --text "Hello world" --text "How are you?"
+```
+
+```text
+你好，世界
+你好吗？
+```
+
+The anonymous oneshot endpoint caps the **sum** of all `text` items at 1500
+characters per request, so a longer batch is split into as few requests as that
+limit allows — `deeplx` chunks by total length, never by segment count. Those requests go out one at a time by default; `--concurrency <count>` sends up to that many at once, which is faster on a long document but bursts an endpoint that rate-limits. A blank `--text` value is a segment too: it is answered with itself, so blank lines keep their place in the output. See
+[`@deeplx/core`](../@deeplx/core/README.md#batch-translation) for the limit and
+the chunking rule.
 
 ### Node library
 
@@ -182,6 +210,27 @@ await translate('Ring til mig!', 'german', 'danish')
 ```log
 'Ruf mich an!'
 ```
+
+#### Batch translation
+
+`translate` also accepts an array of texts and sends them in a single request,
+returning one translation per text, in the same order:
+
+```js
+import { translate } from 'deeplx'
+
+const data = await translate(['Hello world', 'How are you?'], 'ZH', 'EN')
+
+// ['你好，世界', '你好吗？']
+```
+
+The endpoint limits the **sum** of all texts to 1500 characters per request,
+counted in UTF-16 code units (`texts.reduce((n, text) => n + text.length, 0) <=
+MAX_FREE_TEXT_LENGTH`: a CJK character costs 1, an astral emoji 2). A batch over the limit makes the `translate` call throw the existing `413` error
+(`translateByDeepLX` resolves to the same result), and `chunkByLength` packs the
+segments into requests that stay within it. See
+[`@deeplx/core`](../@deeplx/core/README.md#batch-translation) for the full batch
+docs.
 
 ### Example 3
 

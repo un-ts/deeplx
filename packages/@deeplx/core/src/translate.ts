@@ -12,7 +12,6 @@ import {
   IOS_DARWIN_VERSION,
   IOS_OS_VERSION,
   MAX_FREE_TEXT_LENGTH,
-  HTTP_STATUS_NOT_FOUND,
   HTTP_STATUS_OK,
   HTTP_STATUS_SERVICE_UNAVAILABLE,
   HTTP_STATUS_BAD_REQUEST,
@@ -25,9 +24,11 @@ import {
   type TargetLanguage,
 } from './constants.ts'
 import type {
+  DeepLXTranslationErrorResult,
   DeepLXTranslationResult,
   OneshotRequest,
   OneshotResponse,
+  OneshotTranslation,
 } from './types.ts'
 import { abbreviateLanguage } from './utils.ts'
 
@@ -124,7 +125,7 @@ function resolveLang(
 function parseTranslationError(
   error: unknown,
   reqId: number,
-): DeepLXTranslationResult {
+): DeepLXTranslationErrorResult {
   // `x-fetch` wraps transport failures, non-2xx responses and unparseable
   // bodies alike in `XFetchError`; only an error status carries DeepL's detail.
   if (isXFetchError<{ title?: string; message?: string }>(error)) {
@@ -193,9 +194,26 @@ function processTranslationResponse(
   reqId: number,
   sourceLang: SourceLanguage | undefined,
   targetLang: TargetLanguage,
-  dlSession?: string,
-): DeepLXTranslationResult {
-  if (!response?.translations || response.translations.length === 0) {
+  dlSession: string | undefined,
+  textCount: number,
+  aligned: boolean,
+): DeepLXTranslationResult<string[]> {
+  const translations = response?.translations
+
+  // A batch response has to line up one-to-one with the request: a missing,
+  // short or long `translations` array would silently shift every later segment,
+  // so the whole call fails instead of returning misaligned data.
+  if (aligned && translations?.length !== textCount) {
+    const count = translations?.length ?? 0
+    const message = `translation count mismatch: expected ${textCount} translations, got ${count}`
+    throw new Error(message, {
+      cause: { code: HTTP_STATUS_SERVICE_UNAVAILABLE, message },
+    })
+  }
+
+  // A single text keeps resolving to the service-unavailable result when the
+  // endpoint answers without any translation at all.
+  if (!translations?.length) {
     return {
       code: HTTP_STATUS_SERVICE_UNAVAILABLE,
       id: reqId,
@@ -203,15 +221,25 @@ function processTranslationResponse(
     }
   }
 
-  const mainTranslation = response.translations[0]
-  if (!mainTranslation.text) {
-    return {
-      code: HTTP_STATUS_SERVICE_UNAVAILABLE,
-      id: reqId,
-      message: 'Translation failed',
+  // A single text keeps reading only the first translation, exactly as before;
+  // a batch must not hold a placeholder for a segment DeepL did not translate.
+  // The body is wire data, so an entry can be null or malformed even though the
+  // type says otherwise: read each text defensively, and treat anything missing,
+  // empty or not a string as a failed translation rather than throwing.
+  const data: string[] = []
+  for (const entry of translations.slice(0, textCount)) {
+    const text = (entry as OneshotTranslation | null)?.text
+    if (typeof text !== 'string' || !text) {
+      return {
+        code: HTTP_STATUS_SERVICE_UNAVAILABLE,
+        id: reqId,
+        message: 'Translation failed',
+      }
     }
+    data.push(text)
   }
 
+  const mainTranslation = translations[0]
   const detectedLang = mainTranslation.detected_source_language
     ? (mainTranslation.detected_source_language.toUpperCase() as SourceLanguage)
     : sourceLang || 'auto'
@@ -219,7 +247,7 @@ function processTranslationResponse(
   return {
     code: HTTP_STATUS_OK,
     id: reqId,
-    data: mainTranslation.text,
+    data,
     alternatives: [],
     sourceLang: detectedLang,
     targetLang,
@@ -227,33 +255,133 @@ function processTranslationResponse(
   }
 }
 
-export const translateByDeepLX = async (
+/**
+ * `text` is either one string or a list of them, exactly as the server-side
+ * `/translate` insists: a missing, `null` or otherwise wrong value names no text
+ * (`400 Invalid request payload`) rather than an empty text, and inside a list
+ * every element has to be a string — a `null` one included, which the
+ * server-side decoder rejects too (OwO-Network/DLX#246) — while an empty string
+ * is a perfectly good text.
+ *
+ * TypeScript callers are type-checked already; this is what keeps a JavaScript
+ * one from crashing inside `String.prototype.trim` instead of getting the
+ * result the endpoint would answer.
+ */
+function normalizeTexts(text: unknown): string[] | undefined {
+  if (typeof text === 'string') {
+    return [text]
+  }
+  if (!Array.isArray(text)) {
+    return
+  }
+
+  // `Array.isArray` hands the elements back as `any`; name them as `unknown`.
+  const items: unknown[] = text
+  const texts: string[] = []
+  // A hole in a sparse list iterates as `undefined`, which is not a string.
+  for (const item of items) {
+    if (typeof item !== 'string') {
+      return
+    }
+    texts.push(item)
+  }
+  return texts
+}
+
+/**
+ * The positions of the texts that carry something to translate, and their total
+ * length. A blank text — empty, or nothing but whitespace — carries nothing, so
+ * it is not sent and `mergeTranslations` answers it with itself, exactly as the
+ * server-side `/translate` does in its own `textsToTranslate`.
+ */
+function textsToTranslate(texts: readonly string[]): {
+  positions: number[]
+  totalLength: number
+} {
+  const positions: number[] = []
+  let totalLength = 0
+  for (const [index, text] of texts.entries()) {
+    if (text.trim() === '') {
+      continue
+    }
+    positions.push(index)
+    totalLength += text.length
+  }
+  return { positions, totalLength }
+}
+
+/**
+ * Puts the translations back at the positions they were asked for, leaving every
+ * text that was not sent — a blank one — exactly as it arrived.
+ */
+function mergeTranslations(
+  texts: readonly string[],
+  positions: readonly number[],
+  translations: readonly string[],
+): string[] {
+  const merged = [...texts]
+  for (const [index, position] of positions.entries()) {
+    merged[position] = translations[index]
+  }
+  return merged
+}
+
+/**
+ * A single-text caller keeps the original `data: string` shape; a batch with
+ * blank segments gets those positions back.
+ */
+function finalizeResult<T extends string | readonly string[]>(
+  result: DeepLXTranslationResult<string[]>,
+  texts: readonly string[],
+  positions: readonly number[],
+  isBatch: boolean,
+): DeepLXTranslationResult<TranslatedText<T>> {
+  if (!('data' in result)) {
+    return result
+  }
+  const data = mergeTranslations(texts, positions, result.data)
+  const shaped = isBatch ? { ...result, data } : { ...result, data: data[0] }
+  // `T` is the caller's input shape, and the branch above is what picked it.
+  return shaped as DeepLXTranslationResult<TranslatedText<T>>
+}
+
+/**
+ * The answer follows the shape of the text it was asked about: one string in, a
+ * result whose `data` is a string; a list in, one whose `data` is a list.
+ */
+export type TranslatedText<T extends string | readonly string[]> =
+  T extends string ? string : string[]
+
+export const translateByDeepLX = async <T extends string | readonly string[]>(
   sourceLang: SourceLanguage | undefined,
   targetLang: TargetLanguage,
-  text: string,
+  text: T,
   proxyUrl?: string,
   dlSession?: string,
   signal?: AbortSignal,
   skipWarm?: boolean,
   cookies?: string,
-): Promise<DeepLXTranslationResult> => {
-  if (!text) {
-    return { code: HTTP_STATUS_NOT_FOUND, message: 'No text to translate' }
+): Promise<DeepLXTranslationResult<TranslatedText<T>>> => {
+  // A request that never named its texts is refused outright, before anything
+  // else: `text: null`, a missing argument or a wrong type is a payload without
+  // its parameter, not an empty text.
+  const texts = normalizeTexts(text)
+  if (!texts) {
+    return { code: HTTP_STATUS_BAD_REQUEST, message: 'Invalid request payload' }
   }
 
-  if ([...text].length > MAX_FREE_TEXT_LENGTH) {
-    return {
-      code: HTTP_STATUS_PAYLOAD_TOO_LARGE, // Payload Too Large
-      message: `text exceeds maximum length: ${[...text].length} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
-    }
-  }
+  // A single text is the one-element case of a batch; the input shape decides
+  // the shape of `data` below.
+  const isBatch = typeof text !== 'string'
 
-  let requestCookies = cookies
-  if (!requestCookies && !dlSession && !skipWarm) {
-    await warmCookies(proxyUrl)
-    requestCookies = sharedCookies
-  }
+  // Nothing about emptiness is an error: a blank text (empty or whitespace
+  // only) is not sent and is answered with itself, so the positions of a
+  // segmented document stay aligned, and an empty list is answered with an
+  // empty list. The same pass gives the total length of what travels.
+  const { positions, totalLength } = textsToTranslate(texts)
 
+  // The languages are resolved first, exactly as the server-side `/translate`
+  // does, so an unsupported one is refused before the cap is even looked at.
   const targetResult = resolveLang(targetLang, 'target')
   if (!targetResult.success) {
     return { code: HTTP_STATUS_BAD_REQUEST, message: targetResult.error }
@@ -264,8 +392,50 @@ export const translateByDeepLX = async (
     return { code: HTTP_STATUS_BAD_REQUEST, message: sourceResult.error }
   }
 
+  // The anonymous oneshot endpoint caps the *sum* of all `text` items, so a
+  // batch has to be chunked by total length, not by segment count. Blank texts
+  // are not charged against the cap, because they are never sent.
+  //
+  // The count is in UTF-16 code units (`String.prototype.length`), not code
+  // points: probed live, 750 emoji (1500 units) is accepted while 751 (1502
+  // units) is a 400, and 2400-byte CJK text is accepted, so neither bytes nor
+  // code points nor display columns are the unit.
+  if (totalLength > MAX_FREE_TEXT_LENGTH) {
+    return {
+      code: HTTP_STATUS_PAYLOAD_TOO_LARGE, // Payload Too Large
+      message: `text exceeds maximum length: ${totalLength} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
+    }
+  }
+
+  if (positions.length === 0) {
+    // There is nothing to ask the endpoint about: mirror the request back.
+    return finalizeResult<T>(
+      {
+        code: HTTP_STATUS_OK,
+        id: Date.now(),
+        data: texts,
+        alternatives: [],
+        sourceLang: sourceLang || 'auto',
+        targetLang,
+        method: dlSession ? 'Pro' : 'Free',
+      },
+      texts,
+      positions,
+      isBatch,
+    )
+  }
+
+  // The texts that travel: oneshot's `text` field holds just the non-blank ones.
+  const payload = positions.map(position => texts[position])
+
+  let requestCookies = cookies
+  if (!requestCookies && !dlSession && !skipWarm) {
+    await warmCookies(proxyUrl)
+    requestCookies = sharedCookies
+  }
+
   const reqData: OneshotRequest = {
-    text: [text],
+    text: payload,
     target_lang: targetResult.value,
     source_lang: sourceResult.value,
     usage_type: 'translate',
@@ -280,8 +450,9 @@ export const translateByDeepLX = async (
 
   const reqId = Date.now()
 
+  let response: OneshotResponse | null
   try {
-    const response = await xfetch<OneshotResponse | null>(
+    response = await xfetch<OneshotResponse | null>(
       dlSession ? ONESHOT_PRO_ENDPOINT : ONESHOT_FREE_ENDPOINT,
       {
         method: 'POST',
@@ -291,15 +462,24 @@ export const translateByDeepLX = async (
         ...createProxy({ url: proxyUrl }),
       },
     )
+  } catch (error: unknown) {
+    return parseTranslationError(error, reqId)
+  }
 
-    return processTranslationResponse(
+  // Deliberately outside the transport `try`: a misaligned batch throws instead
+  // of being reported as a request failure.
+  return finalizeResult<T>(
+    processTranslationResponse(
       response,
       reqId,
       sourceLang,
       targetLang,
       dlSession,
-    )
-  } catch (error: unknown) {
-    return parseTranslationError(error, reqId)
-  }
+      positions.length,
+      isBatch,
+    ),
+    texts,
+    positions,
+    isBatch,
+  )
 }

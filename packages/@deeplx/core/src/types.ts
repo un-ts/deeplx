@@ -28,15 +28,28 @@ export interface OneshotResponse {
   translations: OneshotTranslation[]
 }
 
-export interface DeepLXTranslationErrorResult {
+/**
+ * What every result carries: the status of the request, and the request id when
+ * there was a request — a result the library refuses locally has none.
+ */
+export interface DeepLXTranslationBaseResult {
   code: number
+  id?: number
+}
+
+export interface DeepLXTranslationErrorResult extends DeepLXTranslationBaseResult {
   message: string
 }
 
-export interface DeepLXTranslationSuccessResult {
-  code: number
+/**
+ * @typeParam T - `string` for a single text, `string[]` for a batch. A batch's
+ * `data` is position-aligned with the requested `text` array.
+ */
+export interface DeepLXTranslationSuccessResult<
+  T extends string[] | string = string,
+> extends DeepLXTranslationBaseResult {
   id: number
-  data: string // The primary translated text
+  data: T // The translated text(s), aligned with the requested text(s)
   alternatives: string[] // Other possible translations
   sourceLang: SourceLanguage
   targetLang: TargetLanguage
@@ -44,5 +57,5 @@ export interface DeepLXTranslationSuccessResult {
 }
 
 // DeepLXTranslationResult represents the final translation result
-export type DeepLXTranslationResult =
-  DeepLXTranslationErrorResult | DeepLXTranslationSuccessResult
+export type DeepLXTranslationResult<T extends string[] | string = string> =
+  DeepLXTranslationErrorResult | DeepLXTranslationSuccessResult<T>
