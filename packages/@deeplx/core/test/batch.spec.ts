@@ -611,6 +611,30 @@ test('a string response with no translations still resolves to the 503 result', 
   })
 })
 
+test('a malformed response entry resolves to the 503 result instead of throwing', async () => {
+  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
+    // The endpoint is wire data, so a null entry is possible.
+    translations: [null],
+  })
+  await setupXfetchMock(mockXfetch)
+
+  const { translateByDeepLX } = await import('@deeplx/core')
+  await expect(
+    translateByDeepLX(
+      'DE',
+      'EN',
+      ['eins'],
+      undefined,
+      undefined,
+      undefined,
+      true,
+    ),
+  ).resolves.toMatchObject({
+    code: HTTP_STATUS_SERVICE_UNAVAILABLE,
+    message: 'Translation failed',
+  })
+})
+
 test('a whitespace-only string is answered locally', async () => {
   // Whitespace carries nothing, so it is answered with itself rather than being
   // sent for the endpoint to echo.

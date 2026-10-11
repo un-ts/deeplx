@@ -242,11 +242,16 @@ function processTranslationResponse(
 
   // A single text keeps reading only the first translation, exactly as before;
   // a batch must not hold a placeholder for a segment DeepL did not translate.
-  const data = translations
-    .slice(0, textCount)
-    .map(translation => translation.text)
-  if (data.some(translation => !translation)) {
-    return failedTranslation(reqId)
+  // The body is wire data, so an entry can be null or malformed even though the
+  // type says otherwise: read each text defensively, and treat anything missing,
+  // empty or not a string as a failed translation rather than throwing.
+  const data: string[] = []
+  for (const entry of translations.slice(0, textCount)) {
+    const text = (entry as OneshotTranslation | null)?.text
+    if (typeof text !== 'string' || !text) {
+      return failedTranslation(reqId)
+    }
+    data.push(text)
   }
 
   const mainTranslation = translations[0]
