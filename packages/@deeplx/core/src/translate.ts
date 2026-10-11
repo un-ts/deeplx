@@ -122,13 +122,10 @@ function resolveLang(
   return { success: true, value: mapped }
 }
 
-/** A transport failure: the endpoint answered, so it carries the request id. */
-type TransportErrorResult = DeepLXTranslationErrorResult & { id: number }
-
 function parseTranslationError(
   error: unknown,
   reqId: number,
-): TransportErrorResult {
+): DeepLXTranslationErrorResult & { id: number } {
   // `x-fetch` wraps transport failures, non-2xx responses and unparseable
   // bodies alike in `XFetchError`; only an error status carries DeepL's detail.
   if (isXFetchError<{ title?: string; message?: string }>(error)) {
@@ -192,33 +189,6 @@ function buildHeaders(
   return headers
 }
 
-/** The result both the single-text and the batch path use for a broken answer. */
-function failedTranslation(reqId: number): DeepLXTranslationResult<string[]> {
-  return {
-    code: HTTP_STATUS_SERVICE_UNAVAILABLE,
-    id: reqId,
-    message: 'Translation failed',
-  }
-}
-
-/**
- * A batch response has to line up one-to-one with the request: a missing, short
- * or long `translations` array would silently shift every later segment, so the
- * whole call fails instead of returning misaligned data.
- */
-function assertAligned(
-  translations: readonly OneshotTranslation[] | undefined,
-  textCount: number,
-): void {
-  if (translations?.length !== textCount) {
-    const count = translations?.length ?? 0
-    const message = `translation count mismatch: expected ${textCount} translations, got ${count}`
-    throw new Error(message, {
-      cause: { code: HTTP_STATUS_SERVICE_UNAVAILABLE, message },
-    })
-  }
-}
-
 function processTranslationResponse(
   response: OneshotResponse | null,
   reqId: number,
@@ -230,14 +200,25 @@ function processTranslationResponse(
 ): DeepLXTranslationResult<string[]> {
   const translations = response?.translations
 
-  if (aligned) {
-    assertAligned(translations, textCount)
+  // A batch response has to line up one-to-one with the request: a missing,
+  // short or long `translations` array would silently shift every later segment,
+  // so the whole call fails instead of returning misaligned data.
+  if (aligned && translations?.length !== textCount) {
+    const count = translations?.length ?? 0
+    const message = `translation count mismatch: expected ${textCount} translations, got ${count}`
+    throw new Error(message, {
+      cause: { code: HTTP_STATUS_SERVICE_UNAVAILABLE, message },
+    })
   }
 
   // A single text keeps resolving to the service-unavailable result when the
   // endpoint answers without any translation at all.
   if (!translations?.length) {
-    return failedTranslation(reqId)
+    return {
+      code: HTTP_STATUS_SERVICE_UNAVAILABLE,
+      id: reqId,
+      message: 'Translation failed',
+    }
   }
 
   // A single text keeps reading only the first translation, exactly as before;
@@ -249,7 +230,11 @@ function processTranslationResponse(
   for (const entry of translations.slice(0, textCount)) {
     const text = (entry as OneshotTranslation | null)?.text
     if (typeof text !== 'string' || !text) {
-      return failedTranslation(reqId)
+      return {
+        code: HTTP_STATUS_SERVICE_UNAVAILABLE,
+        id: reqId,
+        message: 'Translation failed',
+      }
     }
     data.push(text)
   }
@@ -268,23 +253,6 @@ function processTranslationResponse(
     targetLang,
     method: dlSession ? 'Pro' : 'Free',
   }
-}
-
-/**
- * Cookies for one request: explicit ones win, a Pro session or an explicit
- * `skipWarm` avoids the warm-up, and everything else warms the shared jar first.
- */
-async function resolveRequestCookies(
-  cookies: string | undefined,
-  dlSession: string | undefined,
-  proxyUrl: string | undefined,
-  skipWarm: boolean | undefined,
-): Promise<string | undefined> {
-  if (cookies || dlSession || skipWarm) {
-    return cookies
-  }
-  await warmCookies(proxyUrl)
-  return sharedCookies
 }
 
 /**
@@ -375,42 +343,6 @@ function mergeTranslations(
 }
 
 /**
- * The endpoint caps the *sum* of all `text` items in one request. The count is
- * in UTF-16 code units (`String.prototype.length`), not code points: probed
- * live, 750 emoji (1500 units) is accepted while 751 (1502 units) is a 400, and
- * 2400-byte CJK text is accepted, so neither bytes, code points nor display
- * columns are the unit. The message is the server-side one, verbatim, so a
- * caller cannot tell which layer refused the request.
- */
-function lengthError(
-  totalLength: number,
-): DeepLXTranslationErrorResult | undefined {
-  if (totalLength <= MAX_FREE_TEXT_LENGTH) {
-    return undefined
-  }
-  return {
-    code: HTTP_STATUS_PAYLOAD_TOO_LARGE, // Payload Too Large
-    message: `text exceeds maximum length: ${totalLength} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
-  }
-}
-
-/** Resolve both languages, or the error the caller has to return. */
-function resolveLanguages(
-  sourceLang: SourceLanguage | undefined,
-  targetLang: TargetLanguage,
-): { error: string } | { source?: string; target: string } {
-  const targetResult = resolveLang(targetLang, 'target')
-  if (!targetResult.success) {
-    return { error: targetResult.error }
-  }
-  const sourceResult = resolveLang(sourceLang, 'source')
-  if (!sourceResult.success) {
-    return { error: sourceResult.error }
-  }
-  return { source: sourceResult.value, target: targetResult.value }
-}
-
-/**
  * A single-text caller keeps the original `data: string` shape; a batch with
  * blank segments gets those positions back.
  */
@@ -464,17 +396,29 @@ export const translateByDeepLX = async <T extends string | readonly string[]>(
 
   // The languages are resolved first, exactly as the server-side `/translate`
   // does, so an unsupported one is refused before the cap is even looked at.
-  const languages = resolveLanguages(sourceLang, targetLang)
-  if ('error' in languages) {
-    return { code: HTTP_STATUS_BAD_REQUEST, message: languages.error }
+  const targetResult = resolveLang(targetLang, 'target')
+  if (!targetResult.success) {
+    return { code: HTTP_STATUS_BAD_REQUEST, message: targetResult.error }
+  }
+
+  const sourceResult = resolveLang(sourceLang, 'source')
+  if (!sourceResult.success) {
+    return { code: HTTP_STATUS_BAD_REQUEST, message: sourceResult.error }
   }
 
   // The anonymous oneshot endpoint caps the *sum* of all `text` items, so a
   // batch has to be chunked by total length, not by segment count. Blank texts
   // are not charged against the cap, because they are never sent.
-  const tooLong = lengthError(totalLength)
-  if (tooLong) {
-    return tooLong
+  //
+  // The count is in UTF-16 code units (`String.prototype.length`), not code
+  // points: probed live, 750 emoji (1500 units) is accepted while 751 (1502
+  // units) is a 400, and 2400-byte CJK text is accepted, so neither bytes nor
+  // code points nor display columns are the unit.
+  if (totalLength > MAX_FREE_TEXT_LENGTH) {
+    return {
+      code: HTTP_STATUS_PAYLOAD_TOO_LARGE, // Payload Too Large
+      message: `text exceeds maximum length: ${totalLength} characters (anonymous oneshot limit is ${MAX_FREE_TEXT_LENGTH})`,
+    }
   }
 
   if (positions.length === 0) {
@@ -490,17 +434,16 @@ export const translateByDeepLX = async <T extends string | readonly string[]>(
   // The texts that travel: oneshot's `text` field holds just the non-blank ones.
   const payload = positions.map(position => texts[position])
 
-  const requestCookies = await resolveRequestCookies(
-    cookies,
-    dlSession,
-    proxyUrl,
-    skipWarm,
-  )
+  let requestCookies = cookies
+  if (!requestCookies && !dlSession && !skipWarm) {
+    await warmCookies(proxyUrl)
+    requestCookies = sharedCookies
+  }
 
   const reqData: OneshotRequest = {
     text: payload,
-    target_lang: languages.target,
-    source_lang: languages.source,
+    target_lang: targetResult.value,
+    source_lang: sourceResult.value,
     usage_type: 'translate',
     app_information: {
       os: 'iOS',
