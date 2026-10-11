@@ -1,6 +1,5 @@
 import type { SourceLanguage, TargetLanguage } from './constants.ts'
 import { translateByDeepLX } from './translate.ts'
-import type { DeepLXTranslationResult } from './types.ts'
 
 export interface TranslateOptions {
   dlSession?: string
@@ -8,15 +7,6 @@ export interface TranslateOptions {
   signal?: AbortSignal
   skipWarm?: boolean
   cookies?: string
-}
-
-function unwrapResult<T extends string[] | string>(
-  result: DeepLXTranslationResult<T>,
-): T {
-  if ('message' in result) {
-    throw new Error(result.message, { cause: result })
-  }
-  return result.data
 }
 
 export function translate(
@@ -38,30 +28,21 @@ export async function translate(
   options?: TranslateOptions,
 ): Promise<string[] | string> {
   const { proxyUrl, dlSession, signal, skipWarm, cookies } = options ?? {}
-  if (typeof text === 'string') {
-    return unwrapResult(
-      await translateByDeepLX(
-        sourceLang,
-        targetLang,
-        text,
-        proxyUrl,
-        dlSession,
-        signal,
-        skipWarm,
-        cookies,
-      ),
-    )
-  }
-  return unwrapResult(
-    await translateByDeepLX(
-      sourceLang,
-      targetLang,
-      text,
-      proxyUrl,
-      dlSession,
-      signal,
-      skipWarm,
-      cookies,
-    ),
+  // `translateByDeepLX` is overloaded, so the union picks one of them: the value
+  // keeps its runtime shape and both results carry the `data` read here.
+  const result = await translateByDeepLX(
+    sourceLang,
+    targetLang,
+    text as readonly string[],
+    proxyUrl,
+    dlSession,
+    signal,
+    skipWarm,
+    cookies,
   )
+
+  if ('message' in result) {
+    throw new Error(result.message, { cause: result })
+  }
+  return result.data
 }
