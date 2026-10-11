@@ -9,8 +9,9 @@ feat: translate many texts in a single oneshot request
 `translate` and `translateByDeepLX` now accept `text: string | readonly
 string[]`. An array is sent as one oneshot request whose `text` is that array:
 `translate` resolves to a position-aligned `string[]`, and `translateByDeepLX`
-to a result whose `data` is that `string[]` (`DeepLXBatchTranslationResult`). A
-string argument keeps the previous request, response and error shapes exactly.
+to a `DeepLXTranslationResult<string[]>`. A non-blank string argument keeps the
+previous request, response and error shapes exactly; a blank one is answered with
+itself, as below.
 
 The anonymous oneshot endpoint caps the **sum** of all `text` items at 1500
 characters, counted in UTF-16 code units (`String.prototype.length`: a CJK
@@ -25,9 +26,9 @@ text (empty or whitespace-only) is answered with itself without being sent, and
 an empty array is answered with an empty array, so a segmented document keeps its
 positions and the caller never has to filter or remap anything. This mirrors the
 server-side `/translate`. A request that names no text — `null`, `undefined`, a
-wrong type, or a list holding something other than a string — resolves to the
-same `400 Invalid request payload` the server-side `/translate` answers, while a
-`null` or missing element inside a list is the empty string, as it is there. The
+wrong type, or a list holding something other than a string, a `null` element
+included — resolves to the same `400 Invalid request payload` the server-side
+`/translate` answers, while an empty string is a text like any other. The
 one failure left is a response that does not line
 up with the sent texts, which throws an `Error` carrying the library's
 `DeepLXTranslationErrorResult` as `cause`.

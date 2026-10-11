@@ -661,6 +661,9 @@ test('a request that names no text is refused as an invalid payload', async () =
     undefined,
     null,
     100,
+    [null],
+    ['eins', null],
+    ['eins', undefined],
     ['eins', {}],
     ['eins', ['zwei']],
     ['eins', true],
@@ -688,31 +691,6 @@ test('a request that names no text is refused as an invalid payload', async () =
   }
 
   expect(mockXfetch).not.toHaveBeenCalled()
-})
-
-test('a null or missing element is the empty string, as upstream decodes it', async () => {
-  const mockXfetch = vi.fn<typeof xfetch>().mockResolvedValue({
-    translations: [{ text: 'one' }],
-  })
-  await setupXfetchMock(mockXfetch)
-
-  const { translateByDeepLX } = await import('@deeplx/core')
-  const result = await translateByDeepLX(
-    'DE',
-    'EN',
-    // @ts-expect-error -- a null element decodes to an empty text
-    ['eins', null, undefined],
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
-
-  // The server-side decoder leaves the zero value for a null element, so it is a
-  // blank text like any other: never sent, answered with itself.
-  expect(mockXfetch).toHaveBeenCalledOnce()
-  expect(lastBody(mockXfetch)).toMatchObject({ text: ['eins'] })
-  expect(result).toMatchObject({ code: 200, data: ['one', '', ''] })
 })
 
 test('an unsupported language is refused before the total-length limit', async () => {

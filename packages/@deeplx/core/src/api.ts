@@ -9,12 +9,12 @@ export interface TranslateOptions {
   cookies?: string
 }
 
-export async function translate<T extends string | readonly string[]>(
+export const translate = async <T extends string | readonly string[]>(
   text: T,
   targetLang: TargetLanguage,
   sourceLang?: SourceLanguage,
   options?: TranslateOptions,
-): Promise<TranslatedText<T>> {
+): Promise<TranslatedText<T>> => {
   const { proxyUrl, dlSession, signal, skipWarm, cookies } = options ?? {}
   const result = await translateByDeepLX(
     sourceLang,

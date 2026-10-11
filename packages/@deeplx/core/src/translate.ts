@@ -122,10 +122,13 @@ function resolveLang(
   return { success: true, value: mapped }
 }
 
+/** A transport failure: the endpoint answered, so it carries the request id. */
+type TransportErrorResult = DeepLXTranslationErrorResult & { id: number }
+
 function parseTranslationError(
   error: unknown,
   reqId: number,
-): DeepLXTranslationErrorResult {
+): TransportErrorResult {
   // `x-fetch` wraps transport failures, non-2xx responses and unparseable
   // bodies alike in `XFetchError`; only an error status carries DeepL's detail.
   if (isXFetchError<{ title?: string; message?: string }>(error)) {
@@ -280,20 +283,11 @@ async function resolveRequestCookies(
 }
 
 /**
- * `Array.isArray` narrowed to `unknown[]` rather than the `any[]` TypeScript
- * hands back, so the elements get validated instead of trusted.
- */
-function isList(value: unknown): value is unknown[] {
-  return Array.isArray(value)
-}
-
-/**
  * `text` is either one string or a list of them, exactly as the server-side
  * `/translate` insists: a missing, `null` or otherwise wrong value names no text
- * (`400 Invalid request payload`) rather than an empty text. Inside a list, a
- * `null` or missing element is the empty string — the value the server-side
- * decoder leaves behind for it, which is a blank text like any other — while any
- * other value is a payload it cannot bind either.
+ * (`400 Invalid request payload`) rather than an empty text. Inside a list every
+ * element has to be a string — a `null` one included, which the server-side
+ * decoder rejects too — while an empty string is a perfectly good text.
  *
  * JavaScript callers are not type-checked, so this is also what keeps a wrong
  * value from reaching `String.prototype.trim` or the request body as a crash.
@@ -302,20 +296,19 @@ function normalizeTexts(text: unknown): string[] | undefined {
   if (typeof text === 'string') {
     return [text]
   }
-  if (!isList(text)) {
+  if (!Array.isArray(text)) {
     return undefined
   }
 
+  // `Array.isArray` hands the elements back as `any`; name them as `unknown`.
+  const items: unknown[] = text
   const texts: string[] = []
-  // A hole in a sparse list iterates as `undefined`: the empty string.
-  for (const item of text) {
-    if (typeof item === 'string') {
-      texts.push(item)
-    } else if (item === null || item === undefined) {
-      texts.push('')
-    } else {
+  // A hole in a sparse list iterates as `undefined`, which is not a string.
+  for (const item of items) {
+    if (typeof item !== 'string') {
       return undefined
     }
+    texts.push(item)
   }
   return texts
 }
@@ -438,7 +431,7 @@ function finalizeResult<T extends string | readonly string[]>(
 export type TranslatedText<T extends string | readonly string[]> =
   T extends string ? string : string[]
 
-export async function translateByDeepLX<T extends string | readonly string[]>(
+export const translateByDeepLX = async <T extends string | readonly string[]>(
   sourceLang: SourceLanguage | undefined,
   targetLang: TargetLanguage,
   text: T,
@@ -447,7 +440,7 @@ export async function translateByDeepLX<T extends string | readonly string[]>(
   signal?: AbortSignal,
   skipWarm?: boolean,
   cookies?: string,
-): Promise<DeepLXTranslationResult<TranslatedText<T>>> {
+): Promise<DeepLXTranslationResult<TranslatedText<T>>> => {
   // A request that never named its texts is refused outright, before anything
   // else: `text: null`, a missing argument or a wrong type is a payload without
   // its parameter, not an empty text.

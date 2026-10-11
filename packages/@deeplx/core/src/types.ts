@@ -30,8 +30,6 @@ export interface OneshotResponse {
 
 export interface DeepLXTranslationErrorResult {
   code: number
-  /** The request id, for the errors the endpoint answered; absent otherwise. */
-  id?: number
   message: string
 }
 
@@ -54,9 +52,3 @@ export interface DeepLXTranslationSuccessResult<
 // DeepLXTranslationResult represents the final translation result
 export type DeepLXTranslationResult<T extends string[] | string = string> =
   DeepLXTranslationErrorResult | DeepLXTranslationSuccessResult<T>
-
-/**
- * The result of a batch request, i.e. one whose `text` argument was an array:
- * `data` holds one translation per requested text, in the same order.
- */
-export type DeepLXBatchTranslationResult = DeepLXTranslationResult<string[]>
