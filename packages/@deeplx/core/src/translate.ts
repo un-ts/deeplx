@@ -322,13 +322,25 @@ function normalizeTexts(text: unknown): string[] | undefined {
 }
 
 /**
- * The texts the endpoint has to translate: a blank one (empty or whitespace
- * only) carries nothing, so it is not sent and is answered with itself by
- * `restoreBlankSegments`. Nothing about emptiness is an error — an empty list is
- * answered with an empty list — which is what the server-side sibling does too.
+ * The positions of the texts that carry something to translate, and their total
+ * length. A blank text — empty, or nothing but whitespace — carries nothing, so
+ * it is not sent and `mergeTranslations` answers it with itself, exactly as the
+ * server-side `/translate` does in its own `textsToTranslate`.
  */
-function textsToTranslate(texts: readonly string[]): string[] {
-  return texts.filter(value => value.trim() !== '')
+function textsToTranslate(texts: readonly string[]): {
+  positions: number[]
+  totalLength: number
+} {
+  const positions: number[] = []
+  let totalLength = 0
+  for (const [index, text] of texts.entries()) {
+    if (text.trim() === '') {
+      continue
+    }
+    positions.push(index)
+    totalLength += text.length
+  }
+  return { positions, totalLength }
 }
 
 /** The success result for a request the endpoint never had to see. */
@@ -350,23 +362,19 @@ function localResult(
 }
 
 /**
- * The blank segments were never sent, so put them back where they came from —
- * unchanged, since there is nothing to translate in them — and keep the
- * translated segments in order.
+ * Puts the translations back at the positions they were asked for, leaving every
+ * text that was not sent — a blank one — exactly as it arrived.
  */
-function restoreBlankSegments(
+function mergeTranslations(
   texts: readonly string[],
-  data: readonly string[],
+  positions: readonly number[],
+  translations: readonly string[],
 ): string[] {
-  let sent = 0
-  return texts.map(value => {
-    if (value.trim() === '') {
-      return value
-    }
-    const translation = data[sent]
-    sent += 1
-    return translation
-  })
+  const merged = [...texts]
+  for (const [index, position] of positions.entries()) {
+    merged[position] = translations[index]
+  }
+  return merged
 }
 
 /**
@@ -406,25 +414,20 @@ function resolveLanguages(
 }
 
 /**
- * A single-text caller keeps the original `data: string` shape; a batch whose
- * payload skipped blank segments gets those positions back.
+ * A single-text caller keeps the original `data: string` shape; a batch with
+ * blank segments gets those positions back.
  */
 function finalizeResult(
   result: DeepLXTranslationResult<string[]>,
   texts: readonly string[],
-  payload: readonly string[],
+  positions: readonly number[],
   isBatch: boolean,
 ): DeepLXBatchTranslationResult | DeepLXTranslationResult {
   if (!('data' in result)) {
     return result
   }
-  if (!isBatch) {
-    return { ...result, data: result.data[0] }
-  }
-  if (payload.length === texts.length) {
-    return result
-  }
-  return { ...result, data: restoreBlankSegments(texts, result.data) }
+  const data = mergeTranslations(texts, positions, result.data)
+  return isBatch ? { ...result, data } : { ...result, data: data[0] }
 }
 
 export function translateByDeepLX(
@@ -470,8 +473,8 @@ export async function translateByDeepLX(
   // Nothing about emptiness is an error: a blank text (empty or whitespace
   // only) is not sent and is answered with itself, so the positions of a
   // segmented document stay aligned, and an empty list is answered with an
-  // empty list.
-  const payload = textsToTranslate(texts)
+  // empty list. The same pass gives the total length of what travels.
+  const { positions, totalLength } = textsToTranslate(texts)
 
   // The languages are resolved first, exactly as the server-side `/translate`
   // does, so an unsupported one is refused before the cap is even looked at.
@@ -483,21 +486,23 @@ export async function translateByDeepLX(
   // The anonymous oneshot endpoint caps the *sum* of all `text` items, so a
   // batch has to be chunked by total length, not by segment count. Blank texts
   // are not charged against the cap, because they are never sent.
-  const totalLength = payload.reduce((length, item) => length + item.length, 0)
   const tooLong = lengthError(totalLength)
   if (tooLong) {
     return tooLong
   }
 
-  if (payload.length === 0) {
+  if (positions.length === 0) {
     // There is nothing to ask the endpoint about: mirror the request back.
     return finalizeResult(
       localResult(texts, sourceLang, targetLang, dlSession),
       texts,
-      payload,
+      positions,
       isBatch,
     )
   }
+
+  // The texts that travel: oneshot's `text` field holds just the non-blank ones.
+  const payload = positions.map(position => texts[position])
 
   const requestCookies = await resolveRequestCookies(
     cookies,
@@ -547,11 +552,11 @@ export async function translateByDeepLX(
       sourceLang,
       targetLang,
       dlSession,
-      payload.length,
+      positions.length,
       isBatch,
     ),
     texts,
-    payload,
+    positions,
     isBatch,
   )
 }
