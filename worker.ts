@@ -8,7 +8,7 @@ import {
 } from '@deeplx/core'
 
 interface RequestParams {
-  text: string
+  text: string[] | string
   source_lang?: SourceLanguage
   target_lang: TargetLanguage
   dl_session?: string
@@ -33,6 +33,7 @@ function landingPage(): Response {
   const body = `DeepL Translate Api
 
 POST {"text": "have a try", "source_lang": "auto", "target_lang": "ZH"} to /translate
+POST {"text": ["have a try", "and again"], "target_lang": "ZH"} for a whole batch, one translation per text
 
 https://github.com/un-ts/deeplx`
   return new Response(body, {
