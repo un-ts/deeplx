@@ -227,8 +227,9 @@ script.
 
 A web page cannot call the endpoint at all: it answers a preflight without
 `Access-Control-Allow-Origin`, so the browser blocks the request before it is
-sent, and the profile's `User-Agent`, `Accept-Encoding` and `Cookie` are
-forbidden headers there anyway. Send the call through your own server or Worker
+sent; and `User-Agent`, `Accept-Encoding` and `Cookie` are forbidden headers that
+the browser fills in itself, so the iOS profile could not travel from a page
+either. Send the call through your own server or Worker
 instead — this repository's `worker.ts` answers `Access-Control-Allow-Origin: *`
 for exactly that.
 
@@ -264,22 +265,27 @@ Three things work differently inside a browser:
   Nothing in the library requires cookies — the warm-up is what fetches them —
   so `skipWarm: true` is the honest setting in a browser.
 
-- **The profile's `User-Agent` and `Accept-Encoding` cannot be set from
-  JavaScript at all**, and no `fetch` option or library API can change that: a
-  browser drops a request header it may not set, so an extension goes out as a
-  browser request — the same profile the DeepL extension itself uses. Only a
-  `declarativeNetRequest` rule can put the iOS values back. Both APIs need their
-  own manifest entries:
+- **`User-Agent` and `Accept-Encoding` travel as the browser's own values, not
+  the iOS profile's.** They are forbidden request header names: no `fetch` option
+  and no library API can set them, and the browser fills in its own instead, so
+  an extension goes out as a browser request — the same profile the DeepL
+  extension itself uses. Only a `declarativeNetRequest` rule can substitute the
+  iOS values. Both APIs need their own manifest entries:
 
   ```json
   {
     "host_permissions": [
+      "https://www.deepl.com/*",
       "https://oneshot-free.www.deepl.com/*",
       "https://oneshot-pro.www.deepl.com/*"
     ],
     "permissions": ["cookies", "declarativeNetRequestWithHostAccess"]
   }
   ```
+
+  `www.deepl.com` is in there because warming the jar — the `fetch` of the site,
+  or `chrome.cookies.getAll` — needs it for the same reason the endpoint's hosts
+  do: without the permission that request is cross-origin again.
 
 - **`proxyUrl` is Node-only**: in a browser `node-fetch-native`'s proxy module
   is a no-op stub, so the option is ignored rather than throwing.

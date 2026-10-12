@@ -13,17 +13,16 @@ import { expect, test } from 'vitest'
 // does.
 const entry = fileURLToPath(new URL('../lib/index.js', import.meta.url))
 
-// `User-Agent`, `Accept-Encoding` and `Cookie` are forbidden request header
-// names: a browser drops them whatever `fetch` was given. An extension can put
-// the first two back with a `declarativeNetRequest` rule, and only the cookie jar
-// can send the third — no library API can.
-const forbidden = new Set([
-  'accept-encoding',
-  'cookie',
-  'host',
-  'origin',
-  'user-agent',
-])
+// Forbidden request header names: a browser will not let page or extension code
+// choose these, and fills in its own values instead — the cookie jar sends the
+// cookies. Only a `declarativeNetRequest` rule can substitute the iOS profile
+// values, which is why an extension goes out as a browser request.
+const browserUserAgent =
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
+const browserHeaders: Record<string, string> = {
+  'accept-encoding': 'gzip, deflate, br, zstd',
+  'user-agent': browserUserAgent,
+}
 
 interface ExtensionRealm {
   deeplx?: {
@@ -81,8 +80,8 @@ test.skipIf(!existsSync(entry))(
       crypto: globalThis.crypto,
       fetch: (input: URL | string, init?: RequestInit) => {
         const headers = new Headers(init?.headers)
-        for (const name of forbidden) {
-          headers.delete(name)
+        for (const [name, value] of Object.entries(browserHeaders)) {
+          headers.set(name, value)
         }
         requests.push({
           body: typeof init?.body === 'string' ? init.body : '',
@@ -130,9 +129,13 @@ test.skipIf(!existsSync(entry))(
     expect(request.headers.get('x-app-instance-id')).toMatch(uuid)
     expect(request.headers.get('x-app-session-id')).toMatch(uuid)
 
-    // What the browser took away — and what only a `declarativeNetRequest` rule
-    // can add back — does not stop the call from working.
-    expect(request.headers.get('user-agent')).toBeNull()
-    expect(request.headers.get('accept-encoding')).toBeNull()
+    // The browser's own values are what actually travel, not the iOS profile's:
+    // only a `declarativeNetRequest` rule could substitute those, and the call
+    // works either way.
+    expect(request.headers.get('user-agent')).toBe(browserUserAgent)
+    expect(request.headers.get('accept-encoding')).toBe(
+      'gzip, deflate, br, zstd',
+    )
+    expect(request.headers.get('user-agent')).not.toContain('DeepL/')
   },
 )
