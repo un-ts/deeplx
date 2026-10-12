@@ -1,0 +1,43 @@
+name: E2E
+
+on:
+  - push
+  - pull_request
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: Extension E2E on Chromium
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Node.js LTS
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: lts/*
+          cache: yarn
+
+      - name: Install Dependencies
+        run: yarn --immutable
+
+      # No browser cache, per Playwright's own advice: restoring it costs about
+      # as much as the download, and on Linux the system dependencies have to be
+      # installed either way, which is not cacheable.
+      # https://playwright.dev/docs/ci#caching-browsers
+      - name: Install Chromium
+        run: yarn playwright install chromium --with-deps
+
+      - name: Build
+        run: yarn build
+
+      - name: Run Extension E2E
+        run: yarn test:e2e

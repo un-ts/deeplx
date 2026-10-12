@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto'
-
 import { createProxy } from 'node-fetch-native/proxy'
 import { isXFetchError, xfetch } from 'x-fetch'
 
@@ -23,6 +21,7 @@ import {
   type SourceLanguage,
   type TargetLanguage,
 } from './constants.ts'
+import { randomUUID } from './random.ts'
 import type {
   DeepLXTranslationErrorResult,
   DeepLXTranslationResult,

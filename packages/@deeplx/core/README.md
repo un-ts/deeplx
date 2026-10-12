@@ -26,6 +26,7 @@ An unofficial but powerful and easy-to-use yet free DeepL API client for Node.js
   - [Example 2](#example-2)
   - [Example 3](#example-3)
   - [Batch translation](#batch-translation)
+- [Browser and browser extensions](#browser-and-browser-extensions)
 - [Sponsors and Backers](#sponsors-and-backers)
   - [Sponsors](#sponsors)
   - [Backers](#backers)
@@ -209,6 +210,132 @@ mismatch `Error` carrying the library's error result as its `cause`, instead of
 returning misaligned data. Transport and endpoint errors are still returned as
 error results by `translateByDeepLX`, and thrown as an `Error` by `translate`,
 exactly as before.
+
+## Browser and browser extensions
+
+The library imports no Node built-ins, so it bundles for the browser — a test
+here builds the published entry with `vite` — but bundling is not the same as
+being allowed to call the endpoint. That call works from a **browser
+extension**: with host permissions for `https://oneshot-free.www.deepl.com/*`
+(and `https://oneshot-pro.www.deepl.com/*` for a Pro session) the extension's own
+requests are not subject to CORS. That covers the extension's pages and its
+background service worker; a content script keeps the page's restrictions, and
+so does a web page's own service worker — a service worker is not a way around
+CORS. Relay the call to the extension's service worker with
+`chrome.runtime.sendMessage` rather than calling `translate` from a content
+script.
+
+The real thing is covered as well: `yarn test:e2e` builds the published entry
+into an unpacked MV3 extension, loads it into a real Chrome, and lets its service
+worker make this call. `DEEPLX_CHROME_PATH` (or `CHROME_PATH`/`CHROME_BIN`)
+points at the binary, and without one the test skips rather than fails. It stays
+out of `yarn test` because it needs both a browser and the network.
+
+A web page cannot call the endpoint at all: it answers a preflight without
+`Access-Control-Allow-Origin`, so the browser blocks the request before it is
+sent; and `User-Agent`, `Accept-Encoding` and `Cookie` are forbidden headers that
+the browser fills in itself, so the iOS profile could not travel from a page
+either. Send the call through your own server or Worker
+instead — this repository's `worker.ts` answers `Access-Control-Allow-Origin: *`
+for exactly that.
+
+Three things work differently inside a browser:
+
+- **Cookies are the extension's job, not the library's.** `Set-Cookie` is a
+  forbidden response header, so the warm-up that reads it in Node cannot work
+  here, and `Cookie` is a forbidden request header, so the `cookies` option
+  cannot either — only the browser's own jar can send them. There is nothing for
+  the library to support natively: `chrome.cookies` and the manifest are the only
+  tools. An extension can warm the jar the way the library does in Node, because
+  its host permissions put it outside CORS:
+
+  ```js
+  // What the Node warm-up does: fetching the site makes the browser store the
+  // cookies it sets, even though JavaScript cannot read `Set-Cookie` itself.
+  await fetch('https://www.deepl.com/translator', { credentials: 'include' })
+
+  // Or copy what the jar already holds for the site onto the endpoint's host.
+  const [cookie] = await chrome.cookies.getAll({ domain: 'www.deepl.com' })
+  if (cookie) {
+    await chrome.cookies.set({
+      url: 'https://oneshot-free.www.deepl.com/',
+      name: cookie.name,
+      value: cookie.value,
+    })
+  }
+
+  // `translate` is the public entry point, and it throws on an error result.
+  const translated = await translate('Hallo', 'EN', 'DE', { skipWarm: true })
+  ```
+
+  Nothing in the library requires cookies — the warm-up is what fetches them —
+  so `skipWarm: true` is the honest setting in a browser.
+
+- **`User-Agent` and `Accept-Encoding` travel as the browser's own values, not
+  the iOS profile's.** They are forbidden request header names: no `fetch` option
+  and no library API can set them, and the browser fills in its own instead, so
+  an extension goes out as a browser request — the same profile the DeepL
+  extension itself uses. Only a `declarativeNetRequest` rule can substitute the
+  iOS values. Both APIs need their own manifest entries:
+
+  ```json
+  {
+    "host_permissions": [
+      "https://www.deepl.com/*",
+      "https://oneshot-free.www.deepl.com/*",
+      "https://oneshot-pro.www.deepl.com/*"
+    ],
+    "permissions": ["cookies", "declarativeNetRequestWithHostAccess"]
+  }
+  ```
+
+  `www.deepl.com` is in there because warming the jar — the `fetch` of the site,
+  or `chrome.cookies.getAll` — needs it for the same reason the endpoint's hosts
+  do: without the permission that request is cross-origin again.
+
+  A rule can substitute the iOS `User-Agent` for the extension's own requests, as
+  `set` rather than `append` — Chrome only allows `append` for [a short list of
+  headers](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/declarativeNetRequest/ModifyHeaderInfo)
+  that `User-Agent` is not on. The value is the one the package pins — the
+  `IOS_*` values in `constants.ts`, assembled into that header in `translate.ts`
+  next to the `app_information` the same function puts in the body:
+
+  ```js
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [1],
+    addRules: [
+      {
+        id: 1,
+        priority: 1,
+        action: {
+          type: 'modifyHeaders',
+          requestHeaders: [
+            { header: 'user-agent', operation: 'set', value: iosUserAgent },
+          ],
+        },
+        condition: {
+          // Only this extension's own requests, so the rest of the browser keeps
+          // its own profile.
+          initiatorDomains: [chrome.runtime.id],
+          requestDomains: [
+            'oneshot-free.www.deepl.com',
+            'oneshot-pro.www.deepl.com',
+          ],
+          resourceTypes: ['xmlhttprequest'],
+        },
+      },
+    ],
+  })
+  ```
+
+  Even then the request is not the iOS app's: the TLS fingerprint is still the
+  browser's, and the note in `constants.ts` is that DeepL rate-limits clients whose
+  fingerprint, `User-Agent` and `app_information` disagree. Treat a spoofed
+  `User-Agent` as an experiment — the browser profile is what the DeepL extension
+  itself uses.
+
+- **`proxyUrl` is Node-only**: in a browser `node-fetch-native`'s proxy module
+  is a no-op stub, so the option is ignored rather than throwing.
 
 ## Sponsors and Backers
 

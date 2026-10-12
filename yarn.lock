@@ -5092,6 +5092,7 @@ __metadata:
     eslint: "npm:^10.5.0"
     nano-staged: "npm:^1.0.2"
     npm-run-all2: "npm:^9.0.2"
+    playwright: "npm:^1.64.0"
     prettier: "npm:^3.8.4"
     rimraf: "npm:^6.1.3"
     simple-git-hooks: "npm:^2.13.1"
@@ -5104,6 +5105,9 @@ __metadata:
     vitest: "npm:^5.0.0"
     wrangler: "npm:^4.105.0"
     yarn-berry-deduplicate: "npm:^7.0.0"
+  dependenciesMeta:
+    playwright:
+      built: false
   languageName: unknown
   linkType: soft
 
@@ -10254,6 +10258,26 @@ __metadata:
   bin:
     pidtree: bin/pidtree.js
   checksum: 10c0/0cd0bd222ffba553ad4807c6795988bd18b587e9c063149139fb8db78c3b747f43d3b1511372eeda6b29a1c96670d2ee17d65a33f3c54e15d98f800512e613cd
+  languageName: node
+  linkType: hard
+
+"playwright-core@npm:1.64.0":
+  version: 1.64.0
+  resolution: "playwright-core@npm:1.64.0"
+  bin:
+    playwright-core: cli.js
+  checksum: 10c0/fe3237282ada99d634e4d002efd3db6aa51218f7f4f3b1bc31515d30fa6eec5ec940d425e035db2af4e2856d9cae30b7a27bd167870b3285d40bdffd399ab286
+  languageName: node
+  linkType: hard
+
+"playwright@npm:^1.64.0":
+  version: 1.64.0
+  resolution: "playwright@npm:1.64.0"
+  dependencies:
+    playwright-core: "npm:1.64.0"
+  bin:
+    playwright: cli.js
+  checksum: 10c0/f1ee856c280af2ac256225a1cc5e957847f0d2c56a039c89f02e31b0c9928c44e04311923a1b315bea16e3b26e5124e7c296644ad3c05e4c0a6aaa9584009933
   languageName: node
   linkType: hard
 

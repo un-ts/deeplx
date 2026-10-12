@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { configDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
   resolve: {
@@ -9,10 +9,11 @@ export default defineConfig({
     },
   },
   test: {
+    exclude: [...configDefaults.exclude, 'e2e/**'],
     globals: true,
     coverage: {
       enabled: true,
-      include: ['packages/**/src/**'],
+      include: ['packages/**/src/**/*.ts'],
       exclude: ['packages/**/src/cli.ts', 'packages/**/src/fetch.ts'],
       provider: 'istanbul',
       reporter: ['lcov', 'json', 'text'],
