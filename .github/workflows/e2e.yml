@@ -29,17 +29,10 @@ jobs:
       - name: Install Dependencies
         run: yarn --immutable
 
-      # Playwright's own docs advise against caching browsers — restoring costs
-      # about as much as downloading, and the system dependencies cannot be
-      # cached — but the browser is the bulk of the install, so it is cached
-      # against the lockfile that pins the Playwright version.
-      - name: Cache Playwright Browsers
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
-        with:
-          path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('yarn.lock') }}
-          restore-keys: ${{ runner.os }}-playwright-
-
+      # No browser cache, per Playwright's own advice: restoring it costs about
+      # as much as the download, and on Linux the system dependencies have to be
+      # installed either way, which is not cacheable.
+      # https://playwright.dev/docs/ci#caching-browsers
       - name: Install Chromium
         run: yarn playwright install chromium --with-deps
 
