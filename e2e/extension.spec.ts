@@ -1,5 +1,11 @@
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
-import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { createServer } from 'node:http'
 import { homedir, tmpdir } from 'node:os'
 import path from 'node:path'
@@ -36,6 +42,8 @@ function findBrowser(): string | undefined {
     process.env.DEEPLX_CHROME_PATH,
     process.env.CHROME_PATH,
     process.env.CHROME_BIN,
+    // What `playwright install chromium` fetches, which is what CI uses.
+    playwrightBrowser(),
     // Chrome for Testing's user-level layout.
     path.join(homedir(), '.cache/browsers/chrome/chrome-linux64/chrome'),
     // A distribution package. Chromium and Chrome for Testing only: branded
@@ -50,6 +58,35 @@ function findBrowser(): string | undefined {
       existsSync(candidate) &&
       !reportsBrandedChrome(candidate),
   )
+}
+
+// Playwright's cache keeps one directory per browser revision, so the newest
+// `chromium-*` with a binary in either the current or the older layout wins.
+function playwrightBrowser(): string | undefined {
+  const root =
+    process.env.PLAYWRIGHT_BROWSERS_PATH ??
+    path.join(homedir(), '.cache/ms-playwright')
+  try {
+    const revision = readdirSync(root)
+      .filter(name => name.startsWith('chromium-'))
+      .sort((a, b) => a.localeCompare(b))
+      .pop()
+    if (!revision) {
+      return undefined
+    }
+    const layouts: Array<[string, string]> = [
+      ['chrome-linux64', 'chrome'],
+      ['chrome-linux', 'chrome'],
+      ['chrome-mac/Chromium.app/Contents/MacOS', 'Chromium'],
+    ]
+    return layouts
+      .map(([directory, binary]) =>
+        path.join(root, revision, directory, binary),
+      )
+      .find(candidate => existsSync(candidate))
+  } catch {
+    return undefined
+  }
 }
 
 // Branded stable Chrome drops --load-extension, so a binary that introduces
