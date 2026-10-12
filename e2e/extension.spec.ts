@@ -1,16 +1,11 @@
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
-import {
-  existsSync,
-  mkdtempSync,
-  readdirSync,
-  rmSync,
-  writeFileSync,
-} from 'node:fs'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { homedir, tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { chromium } from 'playwright'
 import { build } from 'vite'
 import { expect, test } from 'vitest'
 
@@ -60,30 +55,13 @@ function findBrowser(): string | undefined {
   )
 }
 
-// Playwright's cache keeps one directory per browser revision, so the newest
-// `chromium-*` with a binary in either the current or the older layout wins.
+// Whatever `playwright install chromium` fetched: its own resolution knows the
+// per-platform cache directory (`~/Library/Caches` on macOS, `~/.cache`
+// elsewhere, `PLAYWRIGHT_BROWSERS_PATH` when set) and the executable layout for
+// the installed revision, neither of which is worth guessing here.
 function playwrightBrowser(): string | undefined {
-  const root =
-    process.env.PLAYWRIGHT_BROWSERS_PATH ??
-    path.join(homedir(), '.cache/ms-playwright')
   try {
-    const revision = readdirSync(root)
-      .filter(name => name.startsWith('chromium-'))
-      .sort((a, b) => a.localeCompare(b))
-      .pop()
-    if (!revision) {
-      return undefined
-    }
-    const layouts: Array<[string, string]> = [
-      ['chrome-linux64', 'chrome'],
-      ['chrome-linux', 'chrome'],
-      ['chrome-mac/Chromium.app/Contents/MacOS', 'Chromium'],
-    ]
-    return layouts
-      .map(([directory, binary]) =>
-        path.join(root, revision, directory, binary),
-      )
-      .find(candidate => existsSync(candidate))
+    return chromium.executablePath()
   } catch {
     return undefined
   }
