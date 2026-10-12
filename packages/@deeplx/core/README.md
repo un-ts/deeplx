@@ -225,6 +225,12 @@ CORS. Relay the call to the extension's service worker with
 `chrome.runtime.sendMessage` rather than calling `translate` from a content
 script.
 
+The real thing is covered as well: `yarn test:e2e` builds the published entry
+into an unpacked MV3 extension, loads it into a real Chrome, and lets its service
+worker make this call. `DEEPLX_CHROME_PATH` (or `CHROME_PATH`/`CHROME_BIN`)
+points at the binary, and without one the test skips rather than fails. It stays
+out of `yarn test` because it needs both a browser and the network.
+
 A web page cannot call the endpoint at all: it answers a preflight without
 `Access-Control-Allow-Origin`, so the browser blocks the request before it is
 sent; and `User-Agent`, `Accept-Encoding` and `Cookie` are forbidden headers that
@@ -286,6 +292,48 @@ Three things work differently inside a browser:
   `www.deepl.com` is in there because warming the jar — the `fetch` of the site,
   or `chrome.cookies.getAll` — needs it for the same reason the endpoint's hosts
   do: without the permission that request is cross-origin again.
+
+  A rule can substitute the iOS `User-Agent` for the extension's own requests, as
+  `set` rather than `append` — Chrome only allows `append` for [a short list of
+  headers](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/declarativeNetRequest/ModifyHeaderInfo)
+  that `User-Agent` is not on. The value is the one this package pins in
+  `constants.ts`, built there from `IOS_APP_VERSION`, `IOS_CFNETWORK_VERSION`
+  and `IOS_DARWIN_VERSION`, and it only makes sense next to the `app_information`
+  the library sends in the body — which is why both live in the same module:
+
+  ```js
+  await chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [1],
+    addRules: [
+      {
+        id: 1,
+        priority: 1,
+        action: {
+          type: 'modifyHeaders',
+          requestHeaders: [
+            { header: 'user-agent', operation: 'set', value: iosUserAgent },
+          ],
+        },
+        condition: {
+          // Only this extension's own requests, so the rest of the browser keeps
+          // its own profile.
+          initiatorDomains: [chrome.runtime.id],
+          requestDomains: [
+            'oneshot-free.www.deepl.com',
+            'oneshot-pro.www.deepl.com',
+          ],
+          resourceTypes: ['xmlhttprequest'],
+        },
+      },
+    ],
+  })
+  ```
+
+  Even then the request is not the iOS app's: the TLS fingerprint is still the
+  browser's, and the note in `constants.ts` is that DeepL rate-limits clients whose
+  fingerprint, `User-Agent` and `app_information` disagree. Treat a spoofed
+  `User-Agent` as an experiment — the browser profile is what the DeepL extension
+  itself uses.
 
 - **`proxyUrl` is Node-only**: in a browser `node-fetch-native`'s proxy module
   is a no-op stub, so the option is ignored rather than throwing.

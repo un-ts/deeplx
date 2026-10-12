@@ -25,6 +25,7 @@
     "prepare": "simple-git-hooks && yarn-berry-deduplicate || exit 0",
     "release": "yarn build && changeset publish",
     "test": "vitest run",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "typecov": "type-coverage",
     "version": "changeset version && yarn --no-immutable",
     "wrangler-build": "yarn build && tsx scripts/build.ts"
