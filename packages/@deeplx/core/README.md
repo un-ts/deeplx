@@ -26,6 +26,7 @@ An unofficial but powerful and easy-to-use yet free DeepL API client for Node.js
   - [Example 2](#example-2)
   - [Example 3](#example-3)
   - [Batch translation](#batch-translation)
+- [Browser and browser extensions](#browser-and-browser-extensions)
 - [Sponsors and Backers](#sponsors-and-backers)
   - [Sponsors](#sponsors)
   - [Backers](#backers)
@@ -209,6 +210,31 @@ mismatch `Error` carrying the library's error result as its `cause`, instead of
 returning misaligned data. Transport and endpoint errors are still returned as
 error results by `translateByDeepLX`, and thrown as an `Error` by `translate`,
 exactly as before.
+
+## Browser and browser extensions
+
+The library imports no Node built-ins, so it bundles for the browser (that is a
+test here: `esbuild --platform=browser`), and a **browser extension** is the one
+browser host that can call the endpoint: with host permissions for
+`https://oneshot-free.www.deepl.com/*` — and
+`https://oneshot-pro.www.deepl.com/*` for a Pro session — an extension's requests
+are not subject to CORS. A web page cannot: the endpoint answers a preflight
+without `Access-Control-Allow-Origin`, so the browser blocks the request before
+it is sent. Use your own server or a Worker (this repository's `worker.ts`) for
+that.
+
+Three things work differently inside a browser:
+
+- **Cookies** are out of reach: the warm-up reads `Set-Cookie`, which browsers
+  hide from JavaScript, and `fetch` refuses to send a `Cookie` header. Pass
+  `skipWarm: true`, and have the extension attach cookies — and the
+  profile's `User-Agent` and `Accept-Encoding` — with `declarativeNetRequest`
+  (reading them with `chrome.cookies`).
+- **`proxyUrl` is Node-only**: in a browser `node-fetch-native`'s proxy module
+  is a no-op stub, so the option is ignored rather than throwing.
+- **The header profile is the iOS app's**, and a browser silently drops what it
+  cannot send, so an extension goes out as a browser request — the same profile
+  the DeepL extension itself uses.
 
 ## Sponsors and Backers
 

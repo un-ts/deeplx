@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto'
-
 import { createProxy } from 'node-fetch-native/proxy'
 import { isXFetchError, xfetch } from 'x-fetch'
 
@@ -32,10 +30,13 @@ import type {
 } from './types.ts'
 import { abbreviateLanguage } from './utils.ts'
 
+// The Web Crypto API is the one UUID source every runtime this library supports
+// has — browsers, extension workers and Node 14 and later — so `node:crypto` is
+// never imported, which is what lets a browser bundle build at all.
 let instanceID_: string | undefined
 function getInstanceID(): string {
   // eslint-disable-next-line sonarjs/no-nested-assignment
-  return (instanceID_ ??= randomUUID())
+  return (instanceID_ ??= globalThis.crypto.randomUUID())
 }
 
 // Sent as `x-app-session-id`; stable for the process lifetime and independent
@@ -43,7 +44,7 @@ function getInstanceID(): string {
 let sessionID_: string | undefined
 function getSessionID(): string {
   // eslint-disable-next-line sonarjs/no-nested-assignment
-  return (sessionID_ ??= randomUUID())
+  return (sessionID_ ??= globalThis.crypto.randomUUID())
 }
 
 let sharedCookies = ''
