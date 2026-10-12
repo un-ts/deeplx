@@ -218,7 +218,10 @@ test here: `esbuild --platform=browser`), and a **browser extension** is the one
 browser host that can call the endpoint: with host permissions for
 `https://oneshot-free.www.deepl.com/*` — and
 `https://oneshot-pro.www.deepl.com/*` for a Pro session — an extension's requests
-are not subject to CORS. A web page cannot: the endpoint answers a preflight
+are not subject to CORS — that exception covers the extension's own pages and
+its service worker, while a content script keeps the page's restrictions, so relay
+the call to the service worker with `chrome.runtime.sendMessage` instead of
+calling `translate` from the content script. A web page cannot: the endpoint answers a preflight
 without `Access-Control-Allow-Origin`, so the browser blocks the request before
 it is sent. Use your own server or a Worker (this repository's `worker.ts`) for
 that.
@@ -229,7 +232,21 @@ Three things work differently inside a browser:
   hide from JavaScript, and `fetch` refuses to send a `Cookie` header. Pass
   `skipWarm: true`, and have the extension attach cookies — and the
   profile's `User-Agent` and `Accept-Encoding` — with `declarativeNetRequest`
-  (reading them with `chrome.cookies`).
+  (reading them with `chrome.cookies`). Both need their own manifest entries:
+  `"cookies"` beside host permissions for `chrome.cookies`, and
+  `"declarativeNetRequestWithHostAccess"` (or `"declarativeNetRequest"`) beside
+  host permissions for DNR.
+
+  ```json
+  {
+    "host_permissions": [
+      "https://oneshot-free.www.deepl.com/*",
+      "https://oneshot-pro.www.deepl.com/*"
+    ],
+    "permissions": ["cookies", "declarativeNetRequestWithHostAccess"]
+  }
+  ```
+
 - **`proxyUrl` is Node-only**: in a browser `node-fetch-native`'s proxy module
   is a no-op stub, so the option is ignored rather than throwing.
 - **The header profile is the iOS app's**, and a browser silently drops what it
