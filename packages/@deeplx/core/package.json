@@ -27,6 +27,10 @@
     },
     "./package.json": "./package.json"
   },
+  "browser": {
+    "./lib/random.js": "./lib/random.browser.js",
+    "./src/random.ts": "./src/random.browser.ts"
+  },
   "files": [
     "index.d.cts",
     "lib"
