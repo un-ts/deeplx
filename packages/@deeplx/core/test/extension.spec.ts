@@ -5,31 +5,39 @@ import { runInNewContext } from 'node:vm'
 import { build } from 'vite'
 import { expect, test } from 'vitest'
 
-import type { DeepLXTranslationResult } from '../src/types.ts'
-
-// A browser extension's background service worker: no `window`, no `document`,
-// no Node globals — just `fetch` and Web Crypto, and the CORS exemption its host
-// permissions grant. The published bundle is loaded into such a realm and has to
-// translate, which is as close to the real thing as a Node test can get. Needs
-// `yarn build` first, as CI does.
+// A browser extension's background service worker, as far as Node can stand in
+// for one: no `window`, no `document`, no Node globals, and the forbidden request
+// headers a browser refuses to send stripped before they leave. Loading a real
+// extension needs a browser, so this covers the two things that matter there —
+// the realm's globals and the header profile. Needs `yarn build` first, as CI
+// does.
 const entry = fileURLToPath(new URL('../lib/index.js', import.meta.url))
+
+// `User-Agent`, `Accept-Encoding` and `Cookie` are forbidden request header
+// names: a browser drops them whatever `fetch` was given. An extension can put
+// the first two back with a `declarativeNetRequest` rule, and only the cookie jar
+// can send the third — no library API can.
+const forbidden = new Set([
+  'accept-encoding',
+  'cookie',
+  'host',
+  'origin',
+  'user-agent',
+])
 
 interface ExtensionRealm {
   deeplx?: {
-    translateByDeepLX: (
-      sourceLang: string,
-      targetLang: string,
+    translate: (
       text: string,
-      proxyUrl?: string,
-      dlSession?: string,
-      signal?: AbortSignal,
-      skipWarm?: boolean,
-    ) => Promise<DeepLXTranslationResult>
+      targetLang: string,
+      sourceLang?: string,
+      options?: { skipWarm?: boolean },
+    ) => Promise<string>
   }
 }
 
 test.skipIf(!existsSync(entry))(
-  'the published bundle translates inside an extension service worker realm',
+  'the published bundle translates where a browser strips its profile headers',
   async () => {
     const result = await build({
       configFile: false,
@@ -53,7 +61,12 @@ test.skipIf(!existsSync(entry))(
       .map(chunk => ('code' in chunk ? chunk.code : ''))
       .join('')
 
-    const requests: Array<{ body: string; init: RequestInit; url: string }> = []
+    const requests: Array<{
+      body: string
+      headers: Headers
+      init: RequestInit
+      url: string
+    }> = []
     const realm: Record<string, unknown> = {
       AbortController,
       Headers,
@@ -67,8 +80,13 @@ test.skipIf(!existsSync(entry))(
       console,
       crypto: globalThis.crypto,
       fetch: (input: URL | string, init?: RequestInit) => {
+        const headers = new Headers(init?.headers)
+        for (const name of forbidden) {
+          headers.delete(name)
+        }
         requests.push({
           body: typeof init?.body === 'string' ? init.body : '',
+          headers,
           init: init ?? {},
           url: String(input),
         })
@@ -90,19 +108,13 @@ test.skipIf(!existsSync(entry))(
       throw new Error('the bundle did not expose its entry point')
     }
 
-    const translated = await deeplx.translateByDeepLX(
-      'DE',
-      'EN',
-      'Hallo',
-      undefined,
-      undefined,
-      undefined,
-      true,
-    )
+    const translated = await deeplx.translate('Hallo', 'EN', 'DE', {
+      skipWarm: true,
+    })
 
     // The realm has no `window`, `document` or `process`, so reaching here at all
     // says the bundle needs none of them.
-    expect(translated).toMatchObject({ code: 200, data: 'Hello' })
+    expect(translated).toBe('Hello')
 
     const [request] = requests
     expect(request.url).toContain('/v1/translate')
@@ -113,10 +125,14 @@ test.skipIf(!existsSync(entry))(
       text: ['Hallo'],
     })
 
-    const headers = new Headers(request.init.headers)
     const uuid =
       /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
-    expect(headers.get('x-app-instance-id')).toMatch(uuid)
-    expect(headers.get('x-app-session-id')).toMatch(uuid)
+    expect(request.headers.get('x-app-instance-id')).toMatch(uuid)
+    expect(request.headers.get('x-app-session-id')).toMatch(uuid)
+
+    // What the browser took away — and what only a `declarativeNetRequest` rule
+    // can add back — does not stop the call from working.
+    expect(request.headers.get('user-agent')).toBeNull()
+    expect(request.headers.get('accept-encoding')).toBeNull()
   },
 )

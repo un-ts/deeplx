@@ -234,34 +234,42 @@ for exactly that.
 
 Three things work differently inside a browser:
 
-- **Cookies** are out of reach: the warm-up reads `Set-Cookie`, which browsers
-  hide from JavaScript, and `fetch` refuses to send a `Cookie` header — so the
-  `cookies` option does nothing here, and the cookie jar is what carries them.
-  Nothing in the library requires them — the warm-up is what normally fetches
-  them, and in a browser it cannot — so pass `skipWarm: true` and put them in the
-  jar yourself if you have a session, which the browser then sends along:
+- **Cookies are the extension's job, not the library's.** `Set-Cookie` is a
+  forbidden response header, so the warm-up that reads it in Node cannot work
+  here, and `Cookie` is a forbidden request header, so the `cookies` option
+  cannot either — only the browser's own jar can send them. There is nothing for
+  the library to support natively: `chrome.cookies` and the manifest are the only
+  tools. An extension can warm the jar the way the library does in Node, because
+  its host permissions put it outside CORS:
 
   ```js
-  await chrome.cookies.set({
-    url: 'https://oneshot-free.www.deepl.com/',
-    name: '<name>',
-    value: '<value>',
-  })
+  // What the Node warm-up does: fetching the site makes the browser store the
+  // cookies it sets, even though JavaScript cannot read `Set-Cookie` itself.
+  await fetch('https://www.deepl.com/translator', { credentials: 'include' })
 
-  const result = await translateByDeepLX(
-    'auto',
-    'ZH',
-    text,
-    undefined,
-    undefined,
-    undefined,
-    true, // skipWarm: the warm-up cannot read Set-Cookie in a browser
-  )
+  // Or copy what the jar already holds for the site onto the endpoint's host.
+  const [cookie] = await chrome.cookies.getAll({ domain: 'www.deepl.com' })
+  if (cookie) {
+    await chrome.cookies.set({
+      url: 'https://oneshot-free.www.deepl.com/',
+      name: cookie.name,
+      value: cookie.value,
+    })
+  }
+
+  // `translate` is the public entry point, and it throws on an error result.
+  const translated = await translate('Hallo', 'EN', 'DE', { skipWarm: true })
   ```
 
-  The profile's `User-Agent` and `Accept-Encoding` cannot be set from JavaScript
-  at all — only a `declarativeNetRequest` rule can send those. Both APIs need
-  their own manifest entries:
+  Nothing in the library requires cookies — the warm-up is what fetches them —
+  so `skipWarm: true` is the honest setting in a browser.
+
+- **The profile's `User-Agent` and `Accept-Encoding` cannot be set from
+  JavaScript at all**, and no `fetch` option or library API can change that: a
+  browser drops a request header it may not set, so an extension goes out as a
+  browser request — the same profile the DeepL extension itself uses. Only a
+  `declarativeNetRequest` rule can put the iOS values back. Both APIs need their
+  own manifest entries:
 
   ```json
   {
@@ -275,9 +283,6 @@ Three things work differently inside a browser:
 
 - **`proxyUrl` is Node-only**: in a browser `node-fetch-native`'s proxy module
   is a no-op stub, so the option is ignored rather than throwing.
-- **The header profile is the iOS app's**, and a browser silently drops what it
-  cannot send, so an extension goes out as a browser request — the same profile
-  the DeepL extension itself uses.
 
 ## Sponsors and Backers
 
