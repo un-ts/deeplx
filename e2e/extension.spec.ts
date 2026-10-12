@@ -176,19 +176,30 @@ function createReportServer() {
   return { address, report, server }
 }
 
+// A skipped test counts as a pass, and this suite is the only thing the e2e job
+// runs, so on CI a missing browser or bundle has to fail rather than skip.
+// Locally it skips, which keeps a plain Node runner green.
+function unavailable(skip: (note: string) => void, reason: string): void {
+  if (process.env.CI) {
+    throw new Error(reason)
+  }
+  skip(reason)
+}
+
 test('a real extension service worker translates through the built bundle', async ({
   skip,
 }) => {
   const browserPath = findBrowser()
   if (!browserPath) {
-    skip(
+    unavailable(
+      skip,
       'no usable Chromium binary found; set DEEPLX_CHROME_PATH (or CHROME_PATH/CHROME_BIN) to a Chromium build — branded Google Chrome 137 and later ignores --load-extension',
     )
     // `skip` throws; the `return` is what ends the branch for TypeScript.
     return
   }
   if (!existsSync(publishedEntry)) {
-    skip('the published bundle is missing; run `yarn build` first')
+    unavailable(skip, 'the published bundle is missing; run `yarn build` first')
     return
   }
 

@@ -296,9 +296,9 @@ Three things work differently inside a browser:
   A rule can substitute the iOS `User-Agent` for the extension's own requests, as
   `set` rather than `append` — Chrome only allows `append` for [a short list of
   headers](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/declarativeNetRequest/ModifyHeaderInfo)
-  that `User-Agent` is not on. The value is the one this package pins in
-  values `constants.ts` pins, assembled into that header in `translate.ts` next
-  to the `app_information` the same function puts in the body:
+  that `User-Agent` is not on. The value is the one the package pins — the
+  `IOS_*` values in `constants.ts`, assembled into that header in `translate.ts`
+  next to the `app_information` the same function puts in the body:
 
   ```js
   await chrome.declarativeNetRequest.updateDynamicRules({
