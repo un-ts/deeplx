@@ -213,29 +213,55 @@ exactly as before.
 
 ## Browser and browser extensions
 
-The library imports no Node built-ins, so it bundles for the browser (that is a
-test here: `esbuild --platform=browser`), and a **browser extension** is the one
-browser host that can call the endpoint: with host permissions for
-`https://oneshot-free.www.deepl.com/*` — and
-`https://oneshot-pro.www.deepl.com/*` for a Pro session — an extension's requests
-are not subject to CORS — that exception covers the extension's own pages and
-its service worker, while a content script keeps the page's restrictions, so relay
-the call to the service worker with `chrome.runtime.sendMessage` instead of
-calling `translate` from the content script. A web page cannot: the endpoint answers a preflight
-without `Access-Control-Allow-Origin`, so the browser blocks the request before
-it is sent. Use your own server or a Worker (this repository's `worker.ts`) for
-that.
+The library imports no Node built-ins, so it bundles for the browser — a test
+here builds the published entry with `vite` — but bundling is not the same as
+being allowed to call the endpoint. That call works from a **browser
+extension**: with host permissions for `https://oneshot-free.www.deepl.com/*`
+(and `https://oneshot-pro.www.deepl.com/*` for a Pro session) the extension's own
+requests are not subject to CORS. That covers the extension's pages and its
+background service worker; a content script keeps the page's restrictions, and
+so does a web page's own service worker — a service worker is not a way around
+CORS. Relay the call to the extension's service worker with
+`chrome.runtime.sendMessage` rather than calling `translate` from a content
+script.
+
+A web page cannot call the endpoint at all: it answers a preflight without
+`Access-Control-Allow-Origin`, so the browser blocks the request before it is
+sent, and the profile's `User-Agent`, `Accept-Encoding` and `Cookie` are
+forbidden headers there anyway. Send the call through your own server or Worker
+instead — this repository's `worker.ts` answers `Access-Control-Allow-Origin: *`
+for exactly that.
 
 Three things work differently inside a browser:
 
 - **Cookies** are out of reach: the warm-up reads `Set-Cookie`, which browsers
-  hide from JavaScript, and `fetch` refuses to send a `Cookie` header. Pass
-  `skipWarm: true`, and have the extension attach cookies — and the
-  profile's `User-Agent` and `Accept-Encoding` — with `declarativeNetRequest`
-  (reading them with `chrome.cookies`). Both need their own manifest entries:
-  `"cookies"` beside host permissions for `chrome.cookies`, and
-  `"declarativeNetRequestWithHostAccess"` (or `"declarativeNetRequest"`) beside
-  host permissions for DNR.
+  hide from JavaScript, and `fetch` refuses to send a `Cookie` header — so the
+  `cookies` option does nothing here, and the cookie jar is what carries them.
+  Nothing in the library requires them — the warm-up is what normally fetches
+  them, and in a browser it cannot — so pass `skipWarm: true` and put them in the
+  jar yourself if you have a session, which the browser then sends along:
+
+  ```js
+  await chrome.cookies.set({
+    url: 'https://oneshot-free.www.deepl.com/',
+    name: '<name>',
+    value: '<value>',
+  })
+
+  const result = await translateByDeepLX(
+    'auto',
+    'ZH',
+    text,
+    undefined,
+    undefined,
+    undefined,
+    true, // skipWarm: the warm-up cannot read Set-Cookie in a browser
+  )
+  ```
+
+  The profile's `User-Agent` and `Accept-Encoding` cannot be set from JavaScript
+  at all — only a `declarativeNetRequest` rule can send those. Both APIs need
+  their own manifest entries:
 
   ```json
   {

@@ -12,7 +12,7 @@ export default defineConfig({
     globals: true,
     coverage: {
       enabled: true,
-      include: ['packages/**/src/**'],
+      include: ['packages/**/src/**/*.ts'],
       exclude: ['packages/**/src/cli.ts', 'packages/**/src/fetch.ts'],
       provider: 'istanbul',
       reporter: ['lcov', 'json', 'text'],
