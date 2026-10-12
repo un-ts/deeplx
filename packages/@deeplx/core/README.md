@@ -297,9 +297,8 @@ Three things work differently inside a browser:
   `set` rather than `append` — Chrome only allows `append` for [a short list of
   headers](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/declarativeNetRequest/ModifyHeaderInfo)
   that `User-Agent` is not on. The value is the one this package pins in
-  `constants.ts`, built there from `IOS_APP_VERSION`, `IOS_CFNETWORK_VERSION`
-  and `IOS_DARWIN_VERSION`, and it only makes sense next to the `app_information`
-  the library sends in the body — which is why both live in the same module:
+  values `constants.ts` pins, assembled into that header in `translate.ts` next
+  to the `app_information` the same function puts in the body:
 
   ```js
   await chrome.declarativeNetRequest.updateDynamicRules({

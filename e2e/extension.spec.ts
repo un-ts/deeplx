@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from 'node:child_process'
+import { execFileSync, spawn, type ChildProcess } from 'node:child_process'
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { homedir, tmpdir } from 'node:os'
@@ -29,6 +29,7 @@ const browserEntry = path.join(packageDirectory, 'test/browser-entry.ts')
 const reportTimeout = 60_000
 
 const HTTP_STATUS_OK = 200
+const HTTP_STATUS_BAD_REQUEST = 400
 
 function findBrowser(): string | undefined {
   const candidates: Array<string | undefined> = [
@@ -37,23 +38,46 @@ function findBrowser(): string | undefined {
     process.env.CHROME_BIN,
     // Chrome for Testing's user-level layout.
     path.join(homedir(), '.cache/browsers/chrome/chrome-linux64/chrome'),
-    // A distribution package.
-    '/usr/bin/google-chrome-stable',
-    '/usr/bin/google-chrome',
+    // A distribution package. Chromium and Chrome for Testing only: branded
+    // stable Chrome 137 and later ignores --load-extension, which would leave
+    // this test waiting for an extension that never loads.
     '/usr/bin/chromium',
     '/usr/bin/chromium-browser',
-    // macOS.
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   ]
   return candidates.find(
-    candidate => typeof candidate === 'string' && existsSync(candidate),
+    candidate =>
+      typeof candidate === 'string' &&
+      existsSync(candidate) &&
+      !reportsBrandedChrome(candidate),
   )
+}
+
+// Branded stable Chrome drops --load-extension, so a binary that introduces
+// itself as one is of no use here. Chromium and Chrome for Testing still honour
+// it — the "for Testing" build is what runs this suite locally.
+function reportsBrandedChrome(candidate: string): boolean {
+  try {
+    const version = String(
+      execFileSync(candidate, ['--version'], { encoding: 'utf8' }),
+    )
+    return (
+      version.startsWith('Google Chrome') && !version.includes('for Testing')
+    )
+  } catch {
+    return false
+  }
 }
 
 // What the service worker posts back. `data` is the string `translate` resolves
 // to; `error.cause` is the result object it throws for an error result, so a
 // refusal keeps the contract's `code` and `message` rather than a bare string.
 interface ExtensionReport {
+  contract?: {
+    cause?: { code?: number; message?: string }
+    message?: string
+    name?: string
+    threw: boolean
+  }
   data?: string
   error?: {
     cause?: { code?: number; message?: string }
@@ -121,7 +145,7 @@ test('a real extension service worker translates through the built bundle', asyn
   const browserPath = findBrowser()
   if (!browserPath) {
     skip(
-      'no Chrome/Chromium binary found; set DEEPLX_CHROME_PATH (or CHROME_PATH/CHROME_BIN) to run this test',
+      'no usable Chromium binary found; set DEEPLX_CHROME_PATH (or CHROME_PATH/CHROME_BIN) to a Chromium build — branded Google Chrome 137 and later ignores --load-extension',
     )
     // `skip` throws; the `return` is what ends the branch for TypeScript.
     return
@@ -200,6 +224,23 @@ const send = async payload => {
   })
 }
 
+// The refusal contract, which needs no endpoint: an invalid target language is
+// answered locally, so translate must throw the Error it promises, with the
+// result object as its cause.
+const refusal = async () => {
+  try {
+    await translate('Hallo', 'not-a-language', 'DE', { skipWarm: true })
+    return { threw: false }
+  } catch (error) {
+    return {
+      cause: error?.cause ?? null,
+      message: error?.message,
+      name: error?.name,
+      threw: true,
+    }
+  }
+}
+
 let started = false
 const run = async () => {
   if (started) {
@@ -207,6 +248,7 @@ const run = async () => {
   }
   started = true
   const context = {
+    contract: await refusal(),
     extensionId: chrome.runtime.id,
     userAgent: navigator.userAgent,
   }
@@ -295,6 +337,13 @@ void run()
     expect(raw.userAgent).toContain('Mozilla/5.0')
     // The browser's own profile travels, never the iOS one the Node path pins.
     expect(raw.userAgent).not.toContain('DeepL/')
+
+    // The refusal contract, proven in a real browser: an Error whose message is
+    // the result's, with the result itself as the cause.
+    expect(raw.contract?.threw).toBe(true)
+    expect(raw.contract?.name).toBe('Error')
+    expect(raw.contract?.cause?.code).toBe(HTTP_STATUS_BAD_REQUEST)
+    expect(raw.contract?.message).toBe(raw.contract?.cause?.message)
 
     // `translate` resolves to the translated string, or throws the result object
     // it produced — the worker reports whichever happened, so both arms prove
