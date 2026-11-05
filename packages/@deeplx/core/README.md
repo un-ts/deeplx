@@ -309,18 +309,13 @@ Three things work differently inside a browser:
         priority: 1,
         action: {
           type: 'modifyHeaders',
-          requestHeaders: [
-            { header: 'user-agent', operation: 'set', value: iosUserAgent },
-          ],
+          requestHeaders: [{ header: 'user-agent', operation: 'set', value: iosUserAgent }],
         },
         condition: {
           // Only this extension's own requests, so the rest of the browser keeps
           // its own profile.
           initiatorDomains: [chrome.runtime.id],
-          requestDomains: [
-            'oneshot-free.www.deepl.com',
-            'oneshot-pro.www.deepl.com',
-          ],
+          requestDomains: ['oneshot-free.www.deepl.com', 'oneshot-pro.www.deepl.com'],
           resourceTypes: ['xmlhttprequest'],
         },
       },

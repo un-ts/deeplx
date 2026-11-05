@@ -56,9 +56,7 @@ test.skipIf(!existsSync(entry))(
     if (!('output' in batched)) {
       throw new Error('expected the build to report its output')
     }
-    const code = batched.output
-      .map(chunk => ('code' in chunk ? chunk.code : ''))
-      .join('')
+    const code = batched.output.map(chunk => ('code' in chunk ? chunk.code : '')).join('')
 
     const requests: Array<{
       body: string
@@ -124,8 +122,7 @@ test.skipIf(!existsSync(entry))(
       text: ['Hallo'],
     })
 
-    const uuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+    const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
     expect(request.headers.get('x-app-instance-id')).toMatch(uuid)
     expect(request.headers.get('x-app-session-id')).toMatch(uuid)
 
@@ -133,9 +130,7 @@ test.skipIf(!existsSync(entry))(
     // only a `declarativeNetRequest` rule could substitute those, and the call
     // works either way.
     expect(request.headers.get('user-agent')).toBe(browserUserAgent)
-    expect(request.headers.get('accept-encoding')).toBe(
-      'gzip, deflate, br, zstd',
-    )
+    expect(request.headers.get('accept-encoding')).toBe('gzip, deflate, br, zstd')
     expect(request.headers.get('user-agent')).not.toContain('DeepL/')
   },
 )

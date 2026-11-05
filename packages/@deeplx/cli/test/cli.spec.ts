@@ -34,9 +34,7 @@ afterEach(async () => {
   process.argv = ORIGINAL_ARGV
   process.exitCode = ORIGINAL_EXIT_CODE
   await Promise.all(
-    tempDirs
-      .splice(0)
-      .map(async dir => fs.rm(dir, { recursive: true, force: true })),
+    tempDirs.splice(0).map(async dir => fs.rm(dir, { recursive: true, force: true })),
   )
 })
 
@@ -84,9 +82,7 @@ test('a single --text is one one-segment batch, printed once', async () => {
 })
 
 test('repeated --text values are one batch, one output line per segment', async () => {
-  const translate = vi
-    .fn<Translate>()
-    .mockResolvedValue(['eins', 'zwei', 'drei'])
+  const translate = vi.fn<Translate>().mockResolvedValue(['eins', 'zwei', 'drei'])
   const { log } = await runCli(
     ['-t', 'ZH', '--text', 'eins', '--text', 'zwei', '--text', 'drei'],
     translate,
@@ -94,10 +90,7 @@ test('repeated --text values are one batch, one output line per segment', async 
 
   await vi.waitFor(() => expect(translate).toHaveBeenCalledOnce(), WAIT)
   expect(translate.mock.calls[0][0]).toStrictEqual(['eins', 'zwei', 'drei'])
-  await vi.waitFor(
-    () => expect(log).toHaveBeenCalledWith('eins\nzwei\ndrei'),
-    WAIT,
-  )
+  await vi.waitFor(() => expect(log).toHaveBeenCalledWith('eins\nzwei\ndrei'), WAIT)
 })
 
 test('a batch at exactly the anonymous limit stays one request', async () => {
@@ -105,17 +98,11 @@ test('a batch at exactly the anonymous limit stays one request', async () => {
   const first = 'a'.repeat(half)
   const second = 'b'.repeat(half)
   const translate = vi.fn<Translate>().mockResolvedValue(['first', 'second'])
-  const { log } = await runCli(
-    ['-t', 'ZH', '--text', first, '--text', second],
-    translate,
-  )
+  const { log } = await runCli(['-t', 'ZH', '--text', first, '--text', second], translate)
 
   await vi.waitFor(() => expect(translate).toHaveBeenCalledOnce(), WAIT)
   expect(translate.mock.calls[0][0]).toStrictEqual([first, second])
-  await vi.waitFor(
-    () => expect(log).toHaveBeenCalledWith('first\nsecond'),
-    WAIT,
-  )
+  await vi.waitFor(() => expect(log).toHaveBeenCalledWith('first\nsecond'), WAIT)
 })
 
 test('segments over the limit are chunked by total length, in order', async () => {
@@ -126,28 +113,19 @@ test('segments over the limit are chunked by total length, in order', async () =
     .fn<Translate>()
     .mockResolvedValueOnce(['first'])
     .mockResolvedValueOnce(['second'])
-  const { log } = await runCli(
-    ['-t', 'ZH', '--text', first, '--text', second],
-    translate,
-  )
+  const { log } = await runCli(['-t', 'ZH', '--text', first, '--text', second], translate)
 
   await vi.waitFor(() => expect(translate).toHaveBeenCalledTimes(2), WAIT)
   expect(translate.mock.calls[0][0]).toStrictEqual([first])
   expect(translate.mock.calls[1][0]).toStrictEqual([second])
-  await vi.waitFor(
-    () => expect(log).toHaveBeenCalledWith('first\nsecond'),
-    WAIT,
-  )
+  await vi.waitFor(() => expect(log).toHaveBeenCalledWith('first\nsecond'), WAIT)
 })
 
 test('repeated --file values are read in order as one batch', async () => {
   const first = await tempFile('first.txt', 'eins')
   const second = await tempFile('second.txt', 'zwei')
   const translate = vi.fn<Translate>().mockResolvedValue(['one', 'two'])
-  const { log } = await runCli(
-    ['-t', 'ZH', '-f', first, '-f', second],
-    translate,
-  )
+  const { log } = await runCli(['-t', 'ZH', '-f', first, '-f', second], translate)
 
   await vi.waitFor(() => expect(translate).toHaveBeenCalledOnce(), WAIT)
   expect(translate.mock.calls[0][0]).toStrictEqual(['eins', 'zwei'])
@@ -157,10 +135,7 @@ test('repeated --file values are read in order as one batch', async () => {
 test('--text takes precedence over --file with a warning', async () => {
   const file = await tempFile('file.txt', 'zwei')
   const translate = vi.fn<Translate>().mockResolvedValue(['one'])
-  const { warn } = await runCli(
-    ['-t', 'ZH', '--text', 'eins', '-f', file],
-    translate,
-  )
+  const { warn } = await runCli(['-t', 'ZH', '--text', 'eins', '-f', file], translate)
 
   await vi.waitFor(() => expect(translate).toHaveBeenCalledOnce(), WAIT)
   expect(translate.mock.calls[0][0]).toStrictEqual(['eins'])
@@ -187,9 +162,7 @@ test('a rejected translation fails the command with its message', async () => {
 
   await vi.waitFor(() => expect(error).toHaveBeenCalled(), WAIT)
   expect(process.exitCode).toBe(1)
-  expect(String(error.mock.calls[0][0])).toContain(
-    'texts exceed maximum total length',
-  )
+  expect(String(error.mock.calls[0][0])).toContain('texts exceed maximum total length')
 })
 
 test('without --concurrency the chunks go out one at a time', async () => {
@@ -207,13 +180,7 @@ test('without --concurrency the chunks go out one at a time', async () => {
   })
 
   const { log } = await runCli(
-    [
-      '-t',
-      'ZH',
-      ...segments.flatMap(segment => ['--text', segment]),
-      '--concurrency',
-      '1',
-    ],
+    ['-t', 'ZH', ...segments.flatMap(segment => ['--text', segment]), '--concurrency', '1'],
     translate,
   )
 
@@ -226,11 +193,7 @@ test('without --concurrency the chunks go out one at a time', async () => {
 test('--concurrency bounds the requests in flight and keeps the order', async () => {
   // Just over half the limit, so every segment is a chunk of its own.
   const segmentSize = MAX_FREE_TEXT_LENGTH / 2 + 1
-  const segments = [
-    'a'.repeat(segmentSize),
-    'b'.repeat(segmentSize),
-    'c'.repeat(segmentSize),
-  ]
+  const segments = ['a'.repeat(segmentSize), 'b'.repeat(segmentSize), 'c'.repeat(segmentSize)]
   let inFlight = 0
   let peak = 0
   const translate = vi.fn<Translate>().mockImplementation(async text => {
@@ -238,21 +201,13 @@ test('--concurrency bounds the requests in flight and keeps the order', async ()
     peak = Math.max(peak, inFlight)
     // The first chunk finishes last, so printing in completion order would
     // reorder the segments.
-    await new Promise(resolve =>
-      setTimeout(resolve, text[0].startsWith('a') ? SLOW_CHUNK_MS : 5),
-    )
+    await new Promise(resolve => setTimeout(resolve, text[0].startsWith('a') ? SLOW_CHUNK_MS : 5))
     inFlight -= 1
     return text.map(value => value[0])
   })
 
   const { log } = await runCli(
-    [
-      '-t',
-      'ZH',
-      ...segments.flatMap(segment => ['--text', segment]),
-      '--concurrency',
-      '2',
-    ],
+    ['-t', 'ZH', ...segments.flatMap(segment => ['--text', segment]), '--concurrency', '2'],
     translate,
   )
 
@@ -264,16 +219,11 @@ test('--concurrency bounds the requests in flight and keeps the order', async ()
 
 test('a non-positive --concurrency fails the command', async () => {
   const translate = vi.fn<Translate>()
-  const { error } = await runCli(
-    ['-t', 'ZH', '--text', 'Hallo', '--concurrency', '0'],
-    translate,
-  )
+  const { error } = await runCli(['-t', 'ZH', '--text', 'Hallo', '--concurrency', '0'], translate)
 
   await vi.waitFor(() => expect(error).toHaveBeenCalled(), WAIT)
   expect(process.exitCode).toBe(1)
-  expect(String(error.mock.calls[0][0])).toContain(
-    '--concurrency must be a positive integer',
-  )
+  expect(String(error.mock.calls[0][0])).toContain('--concurrency must be a positive integer')
   expect(translate).not.toHaveBeenCalled()
 })
 

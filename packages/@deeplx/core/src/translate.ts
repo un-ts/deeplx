@@ -88,14 +88,10 @@ async function warmCookies(proxyUrl?: string) {
   return warmupPromise
 }
 
-type ResolveResult<T> =
-  { success: false; error: string } | { success: true; value: T }
+type ResolveResult<T> = { success: false; error: string } | { success: true; value: T }
 
 function resolveLang(code: string, kind: 'target'): ResolveResult<string>
-function resolveLang(
-  code: string | undefined,
-  kind: 'source',
-): ResolveResult<string | undefined>
+function resolveLang(code: string | undefined, kind: 'source'): ResolveResult<string | undefined>
 function resolveLang(
   code: string | undefined,
   kind: 'source' | 'target',
@@ -121,10 +117,7 @@ function resolveLang(
   return { success: true, value: mapped }
 }
 
-function parseTranslationError(
-  error: unknown,
-  reqId: number,
-): DeepLXTranslationErrorResult {
+function parseTranslationError(error: unknown, reqId: number): DeepLXTranslationErrorResult {
   // `x-fetch` wraps transport failures, non-2xx responses and unparseable
   // bodies alike in `XFetchError`; only an error status carries DeepL's detail.
   if (isXFetchError<{ title?: string; message?: string }>(error)) {
@@ -158,10 +151,7 @@ function parseTranslationError(
   }
 }
 
-function buildHeaders(
-  dlSession?: string,
-  requestCookies?: string,
-): Record<string, string> {
+function buildHeaders(dlSession?: string, requestCookies?: string): Record<string, string> {
   const authValue = dlSession ? `Bearer ${dlSession}` : 'None'
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -348,8 +338,9 @@ function finalizeResult<T extends string | readonly string[]>(
  * The answer follows the shape of the text it was asked about: one string in, a
  * result whose `data` is a string; a list in, one whose `data` is a list.
  */
-export type TranslatedText<T extends string | readonly string[]> =
-  T extends string ? string : string[]
+export type TranslatedText<T extends string | readonly string[]> = T extends string
+  ? string
+  : string[]
 
 export const translateByDeepLX = async <T extends string | readonly string[]>(
   sourceLang: SourceLanguage | undefined,

@@ -20,9 +20,7 @@ import { expect, test } from 'vitest'
 // green; because it talks to the network it lives in `e2e/` and runs as
 // `yarn test:e2e` rather than as part of `yarn test`.
 
-const packageDirectory = fileURLToPath(
-  new URL('../packages/@deeplx/core/', import.meta.url),
-)
+const packageDirectory = fileURLToPath(new URL('../packages/@deeplx/core/', import.meta.url))
 const publishedEntry = path.join(packageDirectory, 'lib/index.js')
 const browserEntry = path.join(packageDirectory, 'test/browser-entry.ts')
 
@@ -49,9 +47,7 @@ function findBrowser(): string | undefined {
   ]
   return candidates.find(
     candidate =>
-      typeof candidate === 'string' &&
-      existsSync(candidate) &&
-      !reportsBrandedChrome(candidate),
+      typeof candidate === 'string' && existsSync(candidate) && !reportsBrandedChrome(candidate),
   )
 }
 
@@ -72,12 +68,8 @@ function playwrightBrowser(): string | undefined {
 // it — the "for Testing" build is what runs this suite locally.
 function reportsBrandedChrome(candidate: string): boolean {
   try {
-    const version = String(
-      execFileSync(candidate, ['--version'], { encoding: 'utf8' }),
-    )
-    return (
-      version.startsWith('Google Chrome') && !version.includes('for Testing')
-    )
+    const version = String(execFileSync(candidate, ['--version'], { encoding: 'utf8' }))
+    return version.startsWith('Google Chrome') && !version.includes('for Testing')
   } catch {
     return false
   }
@@ -135,9 +127,7 @@ function createReportServer() {
     request.on('end', () => {
       response.writeHead(HTTP_STATUS_OK, { 'access-control-allow-origin': '*' })
       response.end('ok')
-      reportRef.resolve?.(
-        JSON.parse(Buffer.concat(chunks).toString('utf8')) as ExtensionReport,
-      )
+      reportRef.resolve?.(JSON.parse(Buffer.concat(chunks).toString('utf8')) as ExtensionReport)
     })
   })
   const address = new Promise<number>((resolve, reject) => {
@@ -164,9 +154,7 @@ function unavailable(skip: (note: string) => void, reason: string): void {
   skip(reason)
 }
 
-test('a real extension service worker translates through the built bundle', async ({
-  skip,
-}) => {
+test('a real extension service worker translates through the built bundle', async ({ skip }) => {
   const browserPath = findBrowser()
   if (!browserPath) {
     unavailable(
@@ -182,9 +170,7 @@ test('a real extension service worker translates through the built bundle', asyn
   }
 
   const { address, report, server } = createReportServer()
-  const extensionDirectory = mkdtempSync(
-    path.join(tmpdir(), 'deeplx-extension-'),
-  )
+  const extensionDirectory = mkdtempSync(path.join(tmpdir(), 'deeplx-extension-'))
   const profileDirectory = mkdtempSync(path.join(tmpdir(), 'deeplx-profile-'))
 
   let browser: ChildProcess | undefined
@@ -213,9 +199,7 @@ test('a real extension service worker translates through the built bundle', asyn
     }
     const chunks = output.output.filter(item => item.type === 'chunk')
     if (chunks.length !== 1) {
-      throw new Error(
-        `expected the browser bundle to be one chunk, got ${chunks.length}`,
-      )
+      throw new Error(`expected the browser bundle to be one chunk, got ${chunks.length}`)
     }
     const code = chunks[0].code
 
@@ -303,10 +287,7 @@ chrome.runtime.onInstalled.addListener(() => {
 void run()
 `
 
-    writeFileSync(
-      path.join(extensionDirectory, 'manifest.json'),
-      JSON.stringify(manifest),
-    )
+    writeFileSync(path.join(extensionDirectory, 'manifest.json'), JSON.stringify(manifest))
     writeFileSync(path.join(extensionDirectory, 'core.js'), code)
     writeFileSync(path.join(extensionDirectory, 'sw.js'), serviceWorker)
 
