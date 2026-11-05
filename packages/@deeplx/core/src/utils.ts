@@ -1,11 +1,6 @@
-import {
-  SUPPORTED_LANGUAGES,
-  type Language,
-  type SupportedCode,
-} from './constants.ts'
+import { SUPPORTED_LANGUAGES, type Language, type SupportedCode } from './constants.ts'
 
-let abbreviateLanguageDictionary:
-  Record<Lowercase<Language>, SupportedCode> | undefined
+let abbreviateLanguageDictionary: Record<Lowercase<Language>, SupportedCode> | undefined
 
 function getAbbreviateLanguages() {
   // eslint-disable-next-line sonarjs/no-nested-assignment
@@ -19,10 +14,6 @@ function getAbbreviateLanguages() {
   ))
 }
 
-export function abbreviateLanguage(
-  language: string,
-): SupportedCode | undefined {
-  return getAbbreviateLanguages()[
-    language.split('-')[0].toLowerCase() as Lowercase<Language>
-  ]
+export function abbreviateLanguage(language: string): SupportedCode | undefined {
+  return getAbbreviateLanguages()[language.split('-')[0].toLowerCase() as Lowercase<Language>]
 }

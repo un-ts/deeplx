@@ -52,15 +52,7 @@ async function localAnswer<T extends string | readonly string[]>(
   await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
-  const result = await translateByDeepLX(
-    'DE',
-    'EN',
-    text,
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
+  const result = await translateByDeepLX('DE', 'EN', text, undefined, undefined, undefined, true)
 
   expect(mockXfetch).not.toHaveBeenCalled()
   return result
@@ -73,15 +65,7 @@ test('a string input keeps its one-element request and a string `data`', async (
   await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
-  const result = await translateByDeepLX(
-    'DE',
-    'EN',
-    'Hallo',
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
+  const result = await translateByDeepLX('DE', 'EN', 'Hallo', undefined, undefined, undefined, true)
 
   expect(mockXfetch).toHaveBeenCalledOnce()
   expect(lastBody(mockXfetch)).toMatchObject({ text: ['Hallo'] })
@@ -141,15 +125,7 @@ test('an array of texts is a single request whose `text` is that array', async (
   await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
-  const result = await translateByDeepLX(
-    'DE',
-    'EN',
-    texts,
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
+  const result = await translateByDeepLX('DE', 'EN', texts, undefined, undefined, undefined, true)
 
   expect(mockXfetch).toHaveBeenCalledOnce()
   expect(lastBody(mockXfetch)).toMatchObject({ text: texts })
@@ -201,15 +177,7 @@ test('a batch response with fewer translations than texts is rejected', async ()
 
   const { translateByDeepLX } = await import('@deeplx/core')
   const error = await rejectedError(
-    translateByDeepLX(
-      'DE',
-      'EN',
-      ['eins', 'zwei', 'drei'],
-      undefined,
-      undefined,
-      undefined,
-      true,
-    ),
+    translateByDeepLX('DE', 'EN', ['eins', 'zwei', 'drei'], undefined, undefined, undefined, true),
   )
 
   const message = 'translation count mismatch: expected 3 translations, got 2'
@@ -228,15 +196,7 @@ test('a batch response with more translations than texts is rejected', async () 
 
   const { translateByDeepLX } = await import('@deeplx/core')
   const error = await rejectedError(
-    translateByDeepLX(
-      'DE',
-      'EN',
-      ['eins', 'zwei'],
-      undefined,
-      undefined,
-      undefined,
-      true,
-    ),
+    translateByDeepLX('DE', 'EN', ['eins', 'zwei'], undefined, undefined, undefined, true),
   )
 
   const message = 'translation count mismatch: expected 2 translations, got 3'
@@ -260,15 +220,7 @@ test('a batch that keeps a segment untranslated fails the whole call', async () 
 
   const { translateByDeepLX } = await import('@deeplx/core')
   await expect(
-    translateByDeepLX(
-      'DE',
-      'EN',
-      ['Hallo', 'Welt'],
-      undefined,
-      undefined,
-      undefined,
-      true,
-    ),
+    translateByDeepLX('DE', 'EN', ['Hallo', 'Welt'], undefined, undefined, undefined, true),
   ).resolves.toMatchObject({
     code: HTTP_STATUS_SERVICE_UNAVAILABLE,
     message: 'Translation failed',
@@ -276,22 +228,12 @@ test('a batch that keeps a segment untranslated fails the whole call', async () 
 })
 
 test('a transport failure on a batch is still a result, not a throw', async () => {
-  const mockXfetch = vi
-    .fn<typeof xfetch>()
-    .mockRejectedValue(new Error('network down'))
+  const mockXfetch = vi.fn<typeof xfetch>().mockRejectedValue(new Error('network down'))
   await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
   await expect(
-    translateByDeepLX(
-      'DE',
-      'EN',
-      ['Hallo', 'Welt'],
-      undefined,
-      undefined,
-      undefined,
-      true,
-    ),
+    translateByDeepLX('DE', 'EN', ['Hallo', 'Welt'], undefined, undefined, undefined, true),
   ).resolves.toMatchObject({
     code: HTTP_STATUS_SERVICE_UNAVAILABLE,
     message: 'Error: network down',
@@ -433,15 +375,13 @@ test('the translate helper returns one string per text for an array input', asyn
 })
 
 test('the translate helper throws a returned error result', async () => {
-  const mockXfetch = vi
-    .fn<typeof xfetch>()
-    .mockRejectedValue(new Error('network down'))
+  const mockXfetch = vi.fn<typeof xfetch>().mockRejectedValue(new Error('network down'))
   await setupXfetchMock(mockXfetch)
 
   const { translate } = await import('@deeplx/core')
-  await expect(
-    translate('Hallo', 'EN', 'DE', { skipWarm: true }),
-  ).rejects.toThrow('Error: network down')
+  await expect(translate('Hallo', 'EN', 'DE', { skipWarm: true })).rejects.toThrow(
+    'Error: network down',
+  )
 })
 
 test('the translate helper propagates a batch alignment failure', async () => {
@@ -451,9 +391,7 @@ test('the translate helper propagates a batch alignment failure', async () => {
   await setupXfetchMock(mockXfetch)
 
   const { translate } = await import('@deeplx/core')
-  await expect(
-    translate(['eins', 'zwei'], 'EN', 'DE', { skipWarm: true }),
-  ).rejects.toThrow(
+  await expect(translate(['eins', 'zwei'], 'EN', 'DE', { skipWarm: true })).rejects.toThrow(
     'translation count mismatch: expected 2 translations, got 1',
   )
 })
@@ -569,15 +507,7 @@ test('a batch response with no translations throws the alignment error', async (
 
   const { translateByDeepLX } = await import('@deeplx/core')
   const error = await rejectedError(
-    translateByDeepLX(
-      'DE',
-      'EN',
-      ['eins', 'zwei'],
-      undefined,
-      undefined,
-      undefined,
-      true,
-    ),
+    translateByDeepLX('DE', 'EN', ['eins', 'zwei'], undefined, undefined, undefined, true),
   )
 
   const message = 'translation count mismatch: expected 2 translations, got 0'
@@ -596,15 +526,7 @@ test('a string response with no translations still resolves to the 503 result', 
 
   const { translateByDeepLX } = await import('@deeplx/core')
   await expect(
-    translateByDeepLX(
-      'DE',
-      'EN',
-      'Hallo',
-      undefined,
-      undefined,
-      undefined,
-      true,
-    ),
+    translateByDeepLX('DE', 'EN', 'Hallo', undefined, undefined, undefined, true),
   ).resolves.toMatchObject({
     code: HTTP_STATUS_SERVICE_UNAVAILABLE,
     message: 'Translation failed',
@@ -620,15 +542,7 @@ test('a malformed response entry resolves to the 503 result instead of throwing'
 
   const { translateByDeepLX } = await import('@deeplx/core')
   await expect(
-    translateByDeepLX(
-      'DE',
-      'EN',
-      ['eins'],
-      undefined,
-      undefined,
-      undefined,
-      true,
-    ),
+    translateByDeepLX('DE', 'EN', ['eins'], undefined, undefined, undefined, true),
   ).resolves.toMatchObject({
     code: HTTP_STATUS_SERVICE_UNAVAILABLE,
     message: 'Translation failed',
@@ -671,9 +585,10 @@ test('the translate helper answers a blank text with itself', async () => {
 
   const { translate } = await import('@deeplx/core')
   await expect(translate('', 'EN', 'DE', { skipWarm: true })).resolves.toBe('')
-  await expect(
-    translate(['', '   '], 'EN', 'DE', { skipWarm: true }),
-  ).resolves.toStrictEqual(['', '   '])
+  await expect(translate(['', '   '], 'EN', 'DE', { skipWarm: true })).resolves.toStrictEqual([
+    '',
+    '   ',
+  ])
   expect(mockXfetch).not.toHaveBeenCalled()
 })
 

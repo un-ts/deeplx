@@ -72,15 +72,7 @@ test('translateByDeepLX with skipWarm option skips warmup fetch', async () => {
   await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
-  await translateByDeepLX(
-    'DE',
-    'EN',
-    'Hallo',
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
+  await translateByDeepLX('DE', 'EN', 'Hallo', undefined, undefined, undefined, true)
 
   // Only the translation endpoint should be called – not the warmup endpoint
   expect(mockXfetch).toHaveBeenCalledOnce()
@@ -137,29 +129,14 @@ test('translateByDeepLX surfaces the DeepL 403 detail from the response body', a
   // DeepL answers the iOS "ItaClient" outcomes with a title, a message, or
   // neither; each has to fall back in that order.
   mockXfetch
-    .mockRejectedValueOnce(
-      error(HTTP_STATUS_FORBIDDEN, { title: 'OutdatedClient' }),
-    )
-    .mockRejectedValueOnce(
-      error(HTTP_STATUS_FORBIDDEN, { message: 'AuthenticationFailed' }),
-    )
+    .mockRejectedValueOnce(error(HTTP_STATUS_FORBIDDEN, { title: 'OutdatedClient' }))
+    .mockRejectedValueOnce(error(HTTP_STATUS_FORBIDDEN, { message: 'AuthenticationFailed' }))
     .mockRejectedValueOnce(error(HTTP_STATUS_FORBIDDEN))
     // Any other status keeps the plain response-derived message.
-    .mockRejectedValueOnce(
-      error(HTTP_STATUS_INTERNAL_ERROR, undefined, 'Internal Server Error'),
-    )
+    .mockRejectedValueOnce(error(HTTP_STATUS_INTERNAL_ERROR, undefined, 'Internal Server Error'))
 
   const { translateByDeepLX } = await import('@deeplx/core')
-  const call = () =>
-    translateByDeepLX(
-      'DE',
-      'EN',
-      'Hallo',
-      undefined,
-      undefined,
-      undefined,
-      true,
-    )
+  const call = () => translateByDeepLX('DE', 'EN', 'Hallo', undefined, undefined, undefined, true)
 
   await expect(call()).resolves.toMatchObject({
     code: 403,
@@ -171,8 +148,7 @@ test('translateByDeepLX surfaces the DeepL 403 detail from the response body', a
   })
   await expect(call()).resolves.toMatchObject({
     code: 403,
-    message:
-      'request forbidden by DeepL (auth failed, outdated client, or blocked)',
+    message: 'request forbidden by DeepL (auth failed, outdated client, or blocked)',
   })
   await expect(call()).resolves.toMatchObject({
     code: 500,
@@ -195,15 +171,7 @@ test('translateByDeepLX reports an unparseable success body as service unavailab
 
   const { translateByDeepLX } = await import('@deeplx/core')
   await expect(
-    translateByDeepLX(
-      'DE',
-      'EN',
-      'Hallo',
-      undefined,
-      undefined,
-      undefined,
-      true,
-    ),
+    translateByDeepLX('DE', 'EN', 'Hallo', undefined, undefined, undefined, true),
   ).resolves.toMatchObject({ code: 503 })
 })
 
@@ -214,30 +182,13 @@ test('source_lang is sent as the generic zh while targets keep their script vari
   await setupXfetchMock(mockXfetch)
 
   const { translateByDeepLX } = await import('@deeplx/core')
-  const lastBody = () =>
-    mockXfetch.mock.lastCall?.[1]?.body as Record<string, unknown> | undefined
+  const lastBody = () => mockXfetch.mock.lastCall?.[1]?.body as Record<string, unknown> | undefined
 
   // Mirrors OwO-Network/DLX translate/lang_test.go: lowercase inputs too.
-  await translateByDeepLX(
-    'zh-hant',
-    'EN',
-    '你好',
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
+  await translateByDeepLX('zh-hant', 'EN', '你好', undefined, undefined, undefined, true)
   expect(lastBody()).toMatchObject({ source_lang: 'zh', target_lang: 'en-US' })
 
-  await translateByDeepLX(
-    'ZH-HANS',
-    'EN',
-    '你好',
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
+  await translateByDeepLX('ZH-HANS', 'EN', '你好', undefined, undefined, undefined, true)
   // Guard against a vacuous pass: if "ZH-HANS" were rejected as a source code,
   // translateByDeepLX would return 400 before calling xfetch and lastBody()
   // would still hold the "zh-hant" request above.
@@ -245,15 +196,7 @@ test('source_lang is sent as the generic zh while targets keep their script vari
   expect(lastBody()).toMatchObject({ source_lang: 'zh' })
 
   // The target side keeps the script variant, and "auto" still omits the field.
-  await translateByDeepLX(
-    undefined,
-    'zh-hant',
-    '你好',
-    undefined,
-    undefined,
-    undefined,
-    true,
-  )
+  await translateByDeepLX(undefined, 'zh-hant', '你好', undefined, undefined, undefined, true)
   expect(lastBody()).toMatchObject({ target_lang: 'zh-Hant' })
   expect(lastBody()?.source_lang).toBeUndefined()
 })

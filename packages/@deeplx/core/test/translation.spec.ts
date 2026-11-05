@@ -88,14 +88,8 @@ test('german translation', async () => {
 // either way.
 test('mixed-script Chinese translates when the Chinese script is declared', async () => {
   const cases: ReadonlyArray<readonly [SourceLanguage, string]> = [
-    [
-      'ZH',
-      ' TypeScript 实践：自定义装饰器拦截 Angular Input 转化为 Observable',
-    ],
-    [
-      'ZH-HANT',
-      ' TypeScript 實踐：自訂裝飾器攔截 Angular Input 轉化為 Observable',
-    ],
+    ['ZH', ' TypeScript 实践：自定义装饰器拦截 Angular Input 转化为 Observable'],
+    ['ZH-HANT', ' TypeScript 實踐：自訂裝飾器攔截 Angular Input 轉化為 Observable'],
   ]
 
   for (const [sourceLang, text] of cases) {

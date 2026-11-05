@@ -52,15 +52,12 @@ export type Language =
   // language code with variant
   | `${SupportedCode}-${string}`
 
-export type TargetLanguage =
-  Language | Lowercase<Language> | Uppercase<Language>
+export type TargetLanguage = Language | Lowercase<Language> | Uppercase<Language>
 
 export type SourceLanguage = TargetLanguage | 'auto'
 
-export const ONESHOT_FREE_ENDPOINT =
-  'https://oneshot-free.www.deepl.com/v1/translate'
-export const ONESHOT_PRO_ENDPOINT =
-  'https://oneshot-pro.www.deepl.com/v1/translate'
+export const ONESHOT_FREE_ENDPOINT = 'https://oneshot-free.www.deepl.com/v1/translate'
+export const ONESHOT_PRO_ENDPOINT = 'https://oneshot-pro.www.deepl.com/v1/translate'
 
 /**
  * Request profile pinned to the official DeepL iOS app (26.42, build 5443737),

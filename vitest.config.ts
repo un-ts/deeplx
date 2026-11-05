@@ -4,8 +4,7 @@ export default defineConfig({
   resolve: {
     alias: {
       deeplx: import.meta.resolve('./packages/deeplx/src/index.ts'),
-      '@deeplx/core': import.meta
-        .resolve('./packages/@deeplx/core/src/index.ts'),
+      '@deeplx/core': import.meta.resolve('./packages/@deeplx/core/src/index.ts'),
     },
   },
   test: {

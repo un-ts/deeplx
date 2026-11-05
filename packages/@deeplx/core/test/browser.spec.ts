@@ -34,9 +34,7 @@ test.skipIf(!existsSync(entry))(
     if (!('output' in batched)) {
       throw new Error('expected the build to report its output')
     }
-    const code = batched.output
-      .map(chunk => ('code' in chunk ? chunk.code : ''))
-      .join('')
+    const code = batched.output.map(chunk => ('code' in chunk ? chunk.code : '')).join('')
 
     expect(code).not.toContain('node:crypto')
     expect(code).toContain('globalThis.crypto')
@@ -47,8 +45,7 @@ test.skipIf(!existsSync(entry))(
 // runs it, but coverage maps the sources, and this is the module browsers get.
 test('the browser twin generates a v4 UUID', () => {
   const first = randomUUID()
-  const uuid =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
   expect(first).toMatch(uuid)
   expect(randomUUID()).not.toBe(first)
 })

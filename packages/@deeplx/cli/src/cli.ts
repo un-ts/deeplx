@@ -102,10 +102,7 @@ program
     collect,
   )
   .addOption(
-    new Option(
-      '--dl-session <cookie>',
-      'DeepL Pro session cookie (dl_session)',
-    ).env('DL_SESSION'),
+    new Option('--dl-session <cookie>', 'DeepL Pro session cookie (dl_session)').env('DL_SESSION'),
   )
   .option('--proxy <url>', 'Proxy URL for the request')
   .option('--skip-warm', 'Skip the warmup cookie fetch')
@@ -142,9 +139,7 @@ program
     }
 
     if (!isTextNil && !isFileNil) {
-      console.warn(
-        'Both `text` and `file` options provided, `text` will take precedence',
-      )
+      console.warn('Both `text` and `file` options provided, `text` will take precedence')
     }
 
     // Every value is one segment, and the output follows this order.

@@ -60,8 +60,7 @@ export default {
         return landingPage()
       }
 
-      const body = (await req.json().catch(() => null)) as
-        RequestParams | undefined
+      const body = (await req.json().catch(() => null)) as RequestParams | undefined
 
       if (!body) {
         return json(
