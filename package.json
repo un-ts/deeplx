@@ -36,7 +36,7 @@
     }
   },
   "devDependencies": {
-    "@1stg/common-config": "^15.0.0",
+    "@1stg/common-config": "^17.0.0",
     "@changesets/changelog-github": "^1.0.0",
     "@changesets/cli": "^3.0.0",
     "@commitlint/cli": "^21.1.0",
@@ -60,7 +60,7 @@
     "vite": "^8.0.0",
     "vitest": "^5.0.0",
     "wrangler": "^4.105.0",
-    "yarn-berry-deduplicate": "^7.0.0"
+    "yarn-berry-deduplicate": "^8.0.0"
   },
   "resolutions": {
     "node-fetch": "npm:node-fetch-native@^1.6.7",
